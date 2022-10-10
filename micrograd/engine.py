@@ -1,11 +1,12 @@
 import numpy as np
 
-#TODO: move to different file?
+# TODO: move to different file?
 def unbroadcast(grad, shape):
     new_shape = (1,) * (len(grad.shape) - len(shape)) + shape
     axs = tuple(i for i, d in enumerate(new_shape) if d == 1)
     out_grad = grad.sum(axis=axs, keepdims=True)
     return out_grad.reshape(shape)
+
 
 class Tensor:
     def __init__(self, data, _children=(), _op=""):

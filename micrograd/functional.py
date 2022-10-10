@@ -21,6 +21,7 @@ def cross_entropy(input: Tensor, target: int):
 
     return out
 
+
 def batched_cross_entropy(input: Tensor, target):
     # input: (N, C)
     # target: (N)
@@ -41,7 +42,8 @@ def batched_cross_entropy(input: Tensor, target):
 
     out._backward = _backward
 
-    return out # (N)
+    return out  # (N)
+
 
 def unbroadcast(grad, shape):
     # grad: np.array

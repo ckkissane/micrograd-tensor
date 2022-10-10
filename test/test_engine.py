@@ -1,7 +1,7 @@
 from micrograd.engine import Tensor
 import numpy as np
 import torch
-import pytest
+
 
 def test_add_forward():
     ma = Tensor(np.random.randn(5))
@@ -13,7 +13,8 @@ def test_add_forward():
     tc = ta + tb
 
     assert np.allclose(mc.data, tc.numpy())
-    
+
+
 def test_add_backward():
     ma = Tensor(np.random.randn(5))
     mb = Tensor(np.random.randn(5))
@@ -30,6 +31,7 @@ def test_add_backward():
     assert np.allclose(ma.grad, ta.grad.numpy())
     assert np.allclose(mb.grad, tb.grad.numpy())
 
+
 def test_broadcasted_add_forward():
     ma = Tensor(np.random.randn(5, 5))
     mb = Tensor(np.random.randn(5))
@@ -40,6 +42,7 @@ def test_broadcasted_add_forward():
     tc = ta + tb
 
     assert np.allclose(mc.data, tc.numpy())
+
 
 def test_broadcasted_add_backward():
     ma = Tensor(np.random.randn(5, 5))
@@ -57,6 +60,7 @@ def test_broadcasted_add_backward():
     assert np.allclose(ma.grad, ta.grad.numpy())
     assert np.allclose(mb.grad, tb.grad.numpy())
 
+
 def test_sigmoid_forward():
     ma = Tensor(np.random.randn(2, 2))
     mb = ma.sigmoid()
@@ -65,6 +69,7 @@ def test_sigmoid_forward():
     tb = ta.sigmoid()
 
     assert np.allclose(mb.data, tb.numpy())
+
 
 def test_sigmoid_backward():
     ma = Tensor(np.random.randn(2, 2))
@@ -78,6 +83,7 @@ def test_sigmoid_backward():
 
     assert np.allclose(ma.grad, ta.grad.numpy())
 
+
 def test_matmul_foward():
     ma = Tensor(np.random.randn(2))
     mb = Tensor(np.random.randn(2, 2))
@@ -88,6 +94,7 @@ def test_matmul_foward():
     tc = ta @ tb
 
     assert np.allclose(mc.data, tc.numpy())
+
 
 def test_matmul_backward():
     ma = Tensor(np.random.randn(2))
@@ -105,6 +112,7 @@ def test_matmul_backward():
     assert np.allclose(ma.grad, ta.grad.numpy())
     assert np.allclose(mb.grad, tb.grad.numpy())
 
+
 def test_batched_matmul_foward():
     batch_size = 16
     ma = Tensor(np.random.randn(batch_size, 2))
@@ -116,6 +124,7 @@ def test_batched_matmul_foward():
     tc = ta @ tb
 
     assert np.allclose(mc.data, tc.numpy())
+
 
 def test_batched_matmul_backward():
     batch_size = 16

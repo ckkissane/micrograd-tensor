@@ -2,7 +2,7 @@ from micrograd.engine import Tensor
 import micrograd.nn as nn
 import torch
 import numpy as np
-import pytest
+
 
 def test_sigmoid_forward():
     msig = nn.Sigmoid()
@@ -13,6 +13,7 @@ def test_sigmoid_forward():
     ta = torch.from_numpy(ma.data)
     tb = tsig(ta)
     assert np.allclose(mb.data, tb.numpy())
+
 
 def test_sigmoid_backward():
     msig = nn.Sigmoid()
@@ -27,6 +28,7 @@ def test_sigmoid_backward():
     tb.backward(gradient=torch.ones_like(tb))
     assert np.allclose(ma.grad, ta.grad.numpy())
 
+
 def test_linear_forward():
     mlin = nn.Linear(2, 3)
     ma = Tensor(np.random.randn(2))
@@ -38,6 +40,7 @@ def test_linear_forward():
     ta = torch.from_numpy(ma.data)
     tb = tlin(ta)
     assert np.allclose(mb.data, tb.detach().numpy())
+
 
 def test_linear_backward():
     mlin = nn.Linear(2, 3)
@@ -54,6 +57,7 @@ def test_linear_backward():
     tb.backward(gradient=torch.ones_like(tb))
     assert np.allclose(ma.grad, ta.grad.numpy())
 
+
 def test_batched_linear_forward():
     batch_size = 16
     mlin = nn.Linear(2, 3)
@@ -66,6 +70,7 @@ def test_batched_linear_forward():
     ta = torch.from_numpy(ma.data)
     tb = tlin(ta)
     assert np.allclose(mb.data, tb.detach().numpy())
+
 
 def test_batched_linear_backward():
     batch_size = 16

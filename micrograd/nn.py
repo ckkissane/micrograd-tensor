@@ -18,17 +18,24 @@ class Sigmoid(Module):
 class Linear(Module):
     def __init__(self, nin: int, nout: int):
         self.nin, self.nout = nin, nout
+        k = 1 / nin
         self.weight = Tensor(
             np.random.uniform(
-                -1.0,
-                1.0,
+                -np.sqrt(k),
+                np.sqrt(k),
                 (
                     nin,
                     nout,
                 ),
             )
         )
-        self.bias = Tensor(np.zeros(nout))
+        self.bias = Tensor(
+            np.random.uniform(
+                -np.sqrt(k),
+                np.sqrt(k),
+                (nout,),
+            )
+        )
 
     def __call__(self, x: Tensor):
         xW = x.matmul(self.weight)
