@@ -1,5 +1,11 @@
 import numpy as np
 
+#TODO: move to different file?
+def unbroadcast(grad, shape):
+    new_shape = (1,) * (len(grad.shape) - len(shape)) + shape
+    axs = tuple(i for i, d in enumerate(new_shape) if d == 1)
+    out_grad = grad.sum(axis=axs, keepdims=True)
+    return out_grad.reshape(shape)
 
 class Tensor:
     def __init__(self, data, _children=(), _op=""):
@@ -49,7 +55,10 @@ class Tensor:
         def _backward():
             # TODO: make this more robust for different vector / matrix shapes
             self.grad += out.grad.dot(other.data.T)
-            other.grad += self.data[None, ...].T.dot(out.grad[None, ...])
+            if out.grad.ndim == 1:
+                other.grad += self.data[None, ...].T.dot(out.grad[None, ...])
+            else:
+                other.grad += self.data.T.dot(out.grad)
 
         out._backward = _backward
 
@@ -59,8 +68,8 @@ class Tensor:
         out = Tensor(self.data + other.data, (self, other), "+")
 
         def _backward():
-            self.grad += out.grad
-            other.grad += out.grad
+            self.grad += unbroadcast(out.grad, self.data.shape)
+            other.grad += unbroadcast(out.grad, other.data.shape)
 
         out._backward = _backward
 

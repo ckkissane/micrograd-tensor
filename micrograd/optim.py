@@ -1,5 +1,5 @@
 from typing import List
-from engine import Tensor
+from .engine import Tensor
 import numpy as np
 
 

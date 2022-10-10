@@ -1,5 +1,5 @@
 import numpy as np
-from engine import Tensor
+from .engine import Tensor
 
 
 class Module:
