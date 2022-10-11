@@ -29,6 +29,31 @@ def test_sigmoid_backward():
     assert np.allclose(ma.grad, ta.grad.numpy())
 
 
+def test_relu_forward():
+    mrelu = nn.ReLU()
+    ma = Tensor(np.random.randn(5))
+    mb = mrelu(ma)
+
+    trelu = torch.nn.ReLU()
+    ta = torch.from_numpy(ma.data)
+    tb = trelu(ta)
+    assert np.allclose(mb.data, tb.numpy())
+
+
+def test_relu_backward():
+    mrelu = nn.ReLU()
+    ma = Tensor(np.random.randn(5))
+    mb = mrelu(ma)
+    mb.backward()
+
+    trelu = torch.nn.ReLU()
+    ta = torch.from_numpy(ma.data)
+    ta.requires_grad = True
+    tb = trelu(ta)
+    tb.backward(gradient=torch.ones_like(tb))
+    assert np.allclose(ma.grad, ta.grad.numpy())
+
+
 def test_linear_forward():
     mlin = nn.Linear(2, 3)
     ma = Tensor(np.random.randn(2))

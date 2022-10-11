@@ -15,6 +15,14 @@ class Sigmoid(Module):
         return "Sigmoid()"
 
 
+class ReLU(Module):
+    def __call__(self, x: Tensor):
+        return x.relu()
+
+    def __repr__(self):
+        return "ReLU()"
+
+
 class Linear(Module):
     def __init__(self, nin: int, nout: int):
         self.nin, self.nout = nin, nout

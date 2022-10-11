@@ -142,3 +142,51 @@ def test_batched_matmul_backward():
 
     assert np.allclose(ma.grad, ta.grad.numpy())
     assert np.allclose(mb.grad, tb.grad.numpy())
+
+
+def test_relu_forward():
+    ma = Tensor(np.random.randn(5))
+    mb = ma.relu()
+
+    ta = torch.from_numpy(ma.data)
+    tb = ta.relu()
+
+    assert np.allclose(mb.data, tb.numpy())
+
+
+def test_relu_backward():
+    ma = Tensor(np.random.randn(5))
+    mb = ma.relu()
+    mb.backward()
+
+    ta = torch.from_numpy(ma.data)
+    ta.requires_grad = True
+    tb = ta.relu()
+    tb.backward(gradient=torch.ones_like(tb))
+
+    assert np.allclose(ma.grad, ta.grad.numpy())
+
+
+def test_batched_relu_forward():
+    batch_size = 16
+    ma = Tensor(np.random.randn(batch_size, 5))
+    mb = ma.relu()
+
+    ta = torch.from_numpy(ma.data)
+    tb = ta.relu()
+
+    assert np.allclose(mb.data, tb.numpy())
+
+
+def test_batched_relu_backward():
+    batch_size = 16
+    ma = Tensor(np.random.randn(batch_size, 5))
+    mb = ma.relu()
+    mb.backward()
+
+    ta = torch.from_numpy(ma.data)
+    ta.requires_grad = True
+    tb = ta.relu()
+    tb.backward(gradient=torch.ones_like(tb))
+
+    assert np.allclose(ma.grad, ta.grad.numpy())
