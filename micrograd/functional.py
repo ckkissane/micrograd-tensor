@@ -3,19 +3,23 @@ from .engine import Tensor
 
 
 def cross_entropy(input: Tensor, target: int):
-    # input: (C,) or (N, C)
-    # target: () or (N)
-    softmax_num = np.exp(input.data)
+    """
+    Computes the cross entropy loss between input logits and target
+
+    Args:
+        input (micrograd.Tensor) raw logits of shape (C)
+        target (np.array) Ground truth class indices of shape ()
+    """
+    input_max = input.data.max(axis=-1, keepdims=True)
+    softmax_num = np.exp(input.data - input_max)
     softmax_denom = np.sum(softmax_num)
     probs = softmax_num / softmax_denom
-
     p = probs[target]
-    out = Tensor([-np.log(p)], (input,), "cross_entropy")
+    out = Tensor(-np.log(p).mean(keepdims=True), (input,), "cross_entropy")
 
     def _backward():
-        target_one_hot = np.zeros_like(probs)
-        target_one_hot[target] = 1
-        input.grad += (probs - target_one_hot) * out.grad
+        input.grad = np.copy(probs)
+        input.grad[target] -= 1.0
 
     out._backward = _backward
 
@@ -23,26 +27,29 @@ def cross_entropy(input: Tensor, target: int):
 
 
 def batched_cross_entropy(input: Tensor, target):
-    # input: (N, C)
-    # target: (N)
-    softmax_num = np.exp(input.data)
-    softmax_denom = np.sum(softmax_num, axis=-1)
-    softmax_denom = np.expand_dims(softmax_denom, axis=-1)
-    probs = softmax_num / softmax_denom
+    """
+    Computes the cross entropy loss between input logits and target
 
-    p = np.array([probs[i, c] for i, c in enumerate(target)])
+    Args:
+        input (micrograd.Tensor) raw logits of shape (N, C)
+        target (np.array) Ground truth class indices of shape (N)
+    """
+    input_max = input.data.max(axis=-1, keepdims=True)
+    softmax_num = np.exp(input.data - input_max)
+    softmax_denom = np.sum(softmax_num, axis=-1, keepdims=True)
+    probs = softmax_num / softmax_denom
+    p = probs[np.arange(probs.shape[0]), target]
     out = Tensor(-np.log(p).mean(keepdims=True), (input,), "cross_entropy")
 
     def _backward():
         batch_size = probs.shape[0]
-        target_one_hot = np.zeros_like(probs)
-        for i, c in enumerate(target):
-            target_one_hot[i][c] = 1
-        input.grad += (probs - target_one_hot) * out.grad / batch_size
+        input.grad = np.copy(probs)
+        input.grad[np.arange(batch_size), target] -= 1.0
+        input.grad /= batch_size
 
     out._backward = _backward
 
-    return out  # (N)
+    return out
 
 
 def unbroadcast(grad, shape):
