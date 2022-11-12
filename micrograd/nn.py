@@ -1,5 +1,6 @@
 import numpy as np
 from .engine import Tensor
+from .functional import conv2d
 
 
 class Module:
@@ -55,3 +56,27 @@ class Linear(Module):
 
     def parameters(self):
         return [self.weight, self.bias]
+
+
+class Conv2d(Module):
+    def __init__(self, C_in, C_out, K, stride=1, padding=0):
+        self.C_in = C_in
+        self.C_out = C_out
+        self.K = K
+        self.stride = stride
+        self.padding = padding
+
+        k = 1.0 / (C_in * K * K)
+        self.weight = Tensor(
+            np.random.uniform(-np.sqrt(k), np.sqrt(k), (K, K, C_in, C_out))
+        )
+
+    def __call__(self, Z: Tensor):
+        """
+        Args:
+            Z: Tensor(N, H, W, C_in)
+        """
+        return conv2d(Z, self.weight, stride=self.stride, padding=self.padding)
+
+    def __repr__(self):
+        return f"Conv2d(C_in={self.C_in}, C_out={self.C_out}, K={self.K}, stride={self.stride}, padding={self.padding}"
