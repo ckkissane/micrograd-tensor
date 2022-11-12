@@ -112,3 +112,163 @@ def test_batched_linear_backward():
     tb = tlin(ta)
     tb.backward(gradient=torch.ones_like(tb))
     assert np.allclose(ma.grad, ta.grad.numpy())
+
+
+def test_conv_forward_no_padding_no_stride():
+    Z = np.random.randn(100, 32, 32, 8)
+    K, C_in, C_out = 3, 8, 16
+    my_conv = nn.Conv2d(C_in, C_out, K)
+
+    my_Z = Tensor(Z)
+    my_out = my_conv(my_Z)
+
+    torch_conv = torch.nn.Conv2d(C_in, C_out, K, bias=False)
+    torch_conv.weight = torch.nn.Parameter(
+        torch.from_numpy(my_conv.weight.data).permute(3, 2, 0, 1)
+    )
+    torch_Z = torch.from_numpy(Z).permute(0, 3, 1, 2)
+    torch_out = torch_conv(torch_Z).permute(0, 2, 3, 1)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_conv_forward_with_padding_no_stride():
+    Z = np.random.randn(100, 32, 32, 8)
+    K, C_in, C_out = 3, 8, 16
+    padding = 1
+    my_conv = nn.Conv2d(C_in, C_out, K, padding=padding)
+
+    my_Z = Tensor(Z)
+    my_out = my_conv(my_Z)
+
+    torch_conv = torch.nn.Conv2d(C_in, C_out, K, padding=padding, bias=False)
+    torch_conv.weight = torch.nn.Parameter(
+        torch.from_numpy(my_conv.weight.data).permute(3, 2, 0, 1)
+    )
+    torch_Z = torch.from_numpy(Z).permute(0, 3, 1, 2)
+    torch_out = torch_conv(torch_Z).permute(0, 2, 3, 1)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_conv_forward_with_stride_no_padding():
+    Z = np.random.randn(100, 32, 32, 8)
+    K, C_in, C_out = 3, 8, 16
+    stride = 2
+    my_conv = nn.Conv2d(C_in, C_out, K, stride=stride)
+
+    my_Z = Tensor(Z)
+    my_out = my_conv(my_Z)
+
+    torch_conv = torch.nn.Conv2d(C_in, C_out, K, stride=stride, bias=False)
+    torch_conv.weight = torch.nn.Parameter(
+        torch.from_numpy(my_conv.weight.data).permute(3, 2, 0, 1)
+    )
+    torch_Z = torch.from_numpy(Z).permute(0, 3, 1, 2)
+    torch_out = torch_conv(torch_Z).permute(0, 2, 3, 1)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_conv_forward_with_stride_and_padding():
+    Z = np.random.randn(100, 32, 32, 8)
+    K, C_in, C_out = 3, 8, 16
+    stride = 2
+    padding = 1
+    my_conv = nn.Conv2d(C_in, C_out, K, stride=stride, padding=padding)
+
+    my_Z = Tensor(Z)
+    my_out = my_conv(my_Z)
+
+    torch_conv = torch.nn.Conv2d(
+        C_in, C_out, K, stride=stride, padding=padding, bias=False
+    )
+    torch_conv.weight = torch.nn.Parameter(
+        torch.from_numpy(my_conv.weight.data).permute(3, 2, 0, 1)
+    )
+    torch_Z = torch.from_numpy(Z).permute(0, 3, 1, 2)
+    torch_out = torch_conv(torch_Z).permute(0, 2, 3, 1)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_conv_backward_no_padding_no_stride():
+    Z = np.random.randn(100, 32, 32, 8)
+    K, C_in, C_out = 3, 8, 16
+    my_conv = nn.Conv2d(C_in, C_out, K)
+
+    my_Z = Tensor(Z)
+    my_out = my_conv(my_Z)
+    my_out.backward()
+
+    torch_conv = torch.nn.Conv2d(C_in, C_out, K, bias=False)
+    torch_conv.weight = torch.nn.Parameter(
+        torch.from_numpy(my_conv.weight.data).permute(3, 2, 0, 1)
+    )
+    torch_Z = torch.from_numpy(Z).permute(0, 3, 1, 2)
+    torch_Z.requires_grad = True
+    torch_out = torch_conv(torch_Z)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_Z.grad, torch_Z.grad.permute(0, 2, 3, 1).numpy())
+
+
+def test_conv_backward_with_padding_no_stride():
+    Z = np.random.randn(100, 32, 32, 8)
+    K, C_in, C_out = 3, 8, 16
+    padding = 1
+    my_conv = nn.Conv2d(C_in, C_out, K, padding=padding)
+
+    my_Z = Tensor(Z)
+    my_out = my_conv(my_Z)
+    my_out.backward()
+
+    torch_conv = torch.nn.Conv2d(C_in, C_out, K, padding=padding, bias=False)
+    torch_conv.weight = torch.nn.Parameter(
+        torch.from_numpy(my_conv.weight.data).permute(3, 2, 0, 1)
+    )
+    torch_Z = torch.from_numpy(Z).permute(0, 3, 1, 2)
+    torch_Z.requires_grad = True
+    torch_out = torch_conv(torch_Z)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_Z.grad, torch_Z.grad.permute(0, 2, 3, 1).numpy())
+
+
+def test_conv_backward_with_stride_no_padding():
+    Z = np.random.randn(100, 32, 32, 8)
+    K, C_in, C_out = 3, 8, 16
+    stride = 2
+    my_conv = nn.Conv2d(C_in, C_out, K, stride=stride)
+
+    my_Z = Tensor(Z)
+    my_out = my_conv(my_Z)
+    my_out.backward()
+
+    torch_conv = torch.nn.Conv2d(C_in, C_out, K, stride=stride, bias=False)
+    torch_conv.weight = torch.nn.Parameter(
+        torch.from_numpy(my_conv.weight.data).permute(3, 2, 0, 1)
+    )
+    torch_Z = torch.from_numpy(Z).permute(0, 3, 1, 2)
+    torch_Z.requires_grad = True
+    torch_out = torch_conv(torch_Z)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_Z.grad, torch_Z.grad.permute(0, 2, 3, 1).numpy())
+
+
+def test_conv_backward_with_stride_and_padding():
+    Z = np.random.randn(100, 32, 32, 8)
+    K, C_in, C_out = 3, 8, 16
+    stride = 2
+    padding = 1
+    my_conv = nn.Conv2d(C_in, C_out, K, stride=stride, padding=padding)
+
+    my_Z = Tensor(Z)
+    my_out = my_conv(my_Z)
+    my_out.backward()
+
+    torch_conv = torch.nn.Conv2d(
+        C_in, C_out, K, stride=stride, padding=padding, bias=False
+    )
+    torch_conv.weight = torch.nn.Parameter(
+        torch.from_numpy(my_conv.weight.data).permute(3, 2, 0, 1)
+    )
+    torch_Z = torch.from_numpy(Z).permute(0, 3, 1, 2)
+    torch_Z.requires_grad = True
+    torch_out = torch_conv(torch_Z)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_Z.grad, torch_Z.grad.permute(0, 2, 3, 1).numpy())
