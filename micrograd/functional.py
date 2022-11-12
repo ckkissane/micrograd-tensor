@@ -52,3 +52,72 @@ def unbroadcast(grad, shape):
     axs = tuple(i for i, d in enumerate(new_shape) if d == 1)
     out_grad = grad.sum(axis=axs, keepdims=True)
     return out_grad.reshape(shape)
+
+
+def conv2d(Z, weight, stride=1, padding=0):
+    """
+    Args:
+        Z: Tensor(N, H, W, C_in) input image
+        weight: Tensor(K, K, C_in, C_out) conv filters
+        padding: int (padding to add to each size of image)
+    """
+
+    def conv2d_forward(Z, weight, stride=1, padding=0):
+        N, H, W, C_in = Z.shape
+        K, _, _, C_out = weight.shape
+
+        padded_Z = np.pad(
+            Z, ((0, 0), (padding, padding), (padding, padding), (0, 0)), mode="constant"
+        )
+        Ns, Hs, Ws, Cs = padded_Z.strides
+        inner_dim = K * K * C_in
+        H_out = (H + 2 * padding - K) // stride + 1
+        W_out = (W + 2 * padding - K) // stride + 1
+        A = np.lib.stride_tricks.as_strided(
+            padded_Z,
+            shape=(N, H_out, W_out, K, K, C_in),
+            strides=(Ns, Hs * stride, Ws * stride, Hs, Ws, Cs),
+        ).reshape(-1, inner_dim)
+        out = A @ weight.reshape(-1, C_out)
+        return out.reshape(N, H_out, W_out, C_out)
+
+    out_data = conv2d_forward(Z.data, weight.data, stride=stride, padding=padding)
+    out = Tensor(out_data, (Z, weight), "conv2d")
+
+    def _backward():
+        def dilate(x, dilation):
+            """
+            Args:
+                x: np.array(N, H, W, C_in)
+                dilation: int
+            Returns:
+                out: np.array(N, H*(dilation+1), W*(dilation+1), C_in)
+            """
+            N, H, W, C_in = x.shape
+            dilate_len = dilation + 1
+            dilate_shape = (N, H * dilate_len, W * dilate_len, C_in)
+            out = np.zeros(dilate_shape)
+            #TODO: optimize this?
+            for i in range(H):
+                for j in range(W):
+                    out[:, i * dilate_len, j * dilate_len, :] = x[:, i, j, :]
+            return out
+
+        dilated_out_grad = dilate(out.grad, stride - 1)
+        _, doH, _, _ = dilated_out_grad.shape
+        K, _, _, _ = weight.data.shape
+        _, iH, _, _ = Z.data.shape
+
+        flipped_weight = np.flip(np.flip(weight.data, 0), 1).transpose(0, 1, 3, 2)
+        out_padding = (iH - doH + K - 1) // 2
+        Z.grad += conv2d_forward(dilated_out_grad, flipped_weight, padding=out_padding)
+
+        weight.grad += conv2d_forward(
+            Z.data.transpose(3, 1, 2, 0),
+            dilated_out_grad.transpose(1, 2, 0, 3),
+            padding=padding,
+        ).transpose(1, 2, 0, 3)
+
+    out._backward = _backward
+
+    return out
