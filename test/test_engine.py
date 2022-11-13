@@ -190,3 +190,28 @@ def test_batched_relu_backward():
     tb.backward(gradient=torch.ones_like(tb))
 
     assert np.allclose(ma.grad, ta.grad.numpy())
+
+
+def test_reshape_forward():
+    a = np.arange(6, dtype=np.float32)
+    my_a = Tensor(a)
+    new_shape = (3, 2)
+    my_out = my_a.reshape(new_shape)
+
+    torch_a = torch.from_numpy(a)
+    torch_out = torch_a.reshape(new_shape)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_reshape_backward():
+    a = np.arange(6, dtype=np.float32)
+    my_a = Tensor(a)
+    new_shape = (3, 2)
+    my_out = my_a.reshape(new_shape)
+    my_out.backward()
+
+    torch_a = torch.from_numpy(a)
+    torch_a.requires_grad = True
+    torch_out = torch_a.reshape(new_shape)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_a.grad, torch_a.grad.numpy())
