@@ -85,3 +85,13 @@ class Tensor:
         out._backward = _backward
 
         return out
+
+    def reshape(self, newshape):
+        out = Tensor(np.reshape(self.data, newshape), (self,), "reshape")
+
+        def _backward():
+            self.grad += np.reshape(out.grad, self.data.shape)
+
+        out._backward = _backward
+
+        return out
