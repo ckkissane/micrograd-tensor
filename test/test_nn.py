@@ -288,3 +288,46 @@ def test_conv_backward_with_stride_and_padding():
     assert np.allclose(
         my_conv.weight.grad, torch_conv.weight.grad.permute(2, 3, 1, 0).numpy()
     )
+
+
+def test_module_parameters():
+    class CNN(nn.Module):
+        def __init__(self):
+            self.conv1 = nn.Conv2d(1, 6, K=5, stride=2, padding=2)
+            self.conv2 = nn.Conv2d(6, 16, K=5, stride=2)
+
+            self.lin1 = nn.Linear(400, 120)
+            self.lin2 = nn.Linear(120, 80)
+            self.lin3 = nn.Linear(80, 10)
+
+        def manual_params(self):
+            return [
+                self.conv1.weight,
+                self.conv2.weight,
+                self.lin1.weight,
+                self.lin1.bias,
+                self.lin2.weight,
+                self.lin2.bias,
+                self.lin3.weight,
+                self.lin3.bias,
+            ]
+
+    model = CNN()
+    assert set(model.manual_params()) == set(model.parameters())
+
+
+def test_module_parameters_with_list():
+    class MLP(nn.Module):
+        def __init__(self, nin, nouts):
+            sz = [nin] + nouts
+            self.layers = []
+            for i in range(len(nouts)):
+                self.layers.append(nn.Linear(sz[i], sz[i + 1]))
+                if i != len(nouts) - 1:
+                    self.layers.append(nn.ReLU())
+
+        def manual_params(self):
+            return [p for layer in self.layers for p in layer.parameters()]
+
+    model = MLP(10, [20, 10])
+    assert set(model.manual_params()) == set(model.parameters())

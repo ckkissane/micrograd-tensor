@@ -1,11 +1,37 @@
 import numpy as np
 from .engine import Tensor
 from .functional import conv2d
+from typing import List
+
+
+def get_parameters(obj) -> List[Tensor]:
+    if isinstance(obj, Module):
+        return obj.parameters()
+    elif isinstance(obj, Tensor):
+        return [obj]
+    elif isinstance(
+        obj,
+        (
+            list,
+            tuple,
+        ),
+    ):
+        res = []
+        for value in obj:
+            res.extend(get_parameters(value))
+        return res
+    elif isinstance(obj, dict):
+        res = []
+        for value in obj.values():
+            res.extend(get_parameters(value))
+        return res
+    else:
+        return []
 
 
 class Module:
-    def parameters(self):
-        return []
+    def parameters(self) -> List[Tensor]:
+        return get_parameters(self.__dict__)
 
 
 class Sigmoid(Module):
@@ -80,3 +106,6 @@ class Conv2d(Module):
 
     def __repr__(self):
         return f"Conv2d(C_in={self.C_in}, C_out={self.C_out}, K={self.K}, stride={self.stride}, padding={self.padding}"
+
+    def parameters(self):
+        return [self.weight]
