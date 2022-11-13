@@ -61,6 +61,64 @@ def test_broadcasted_add_backward():
     assert np.allclose(mb.grad, tb.grad.numpy())
 
 
+def test_div_forward():
+    my_a = Tensor(np.random.randn(5))
+    my_b = Tensor(np.random.randn(5))
+    my_c = my_a / my_b
+
+    torch_a = torch.from_numpy(my_a.data)
+    torch_b = torch.from_numpy(my_b.data)
+    torch_c = torch_a / torch_b
+
+    assert np.allclose(my_c.data, torch_c.numpy())
+
+
+def test_div_backward():
+    my_a = Tensor(np.random.randn(5))
+    my_b = Tensor(np.random.randn(5))
+    my_c = my_a / my_b
+    my_c.backward()
+
+    torch_a = torch.from_numpy(my_a.data)
+    torch_a.requires_grad = True
+    torch_b = torch.from_numpy(my_b.data)
+    torch_b.requires_grad = True
+    torch_c = torch_a / torch_b
+    torch_c.backward(gradient=torch.ones_like(torch_c))
+
+    assert np.allclose(my_a.grad, torch_a.grad.numpy())
+    assert np.allclose(my_b.grad, torch_b.grad.numpy())
+
+
+def test_broadcasted_div_forward():
+    my_a = Tensor(np.random.randn(5, 5))
+    my_b = Tensor(np.random.randn(5))
+    my_c = my_a / my_b
+
+    torch_a = torch.from_numpy(my_a.data)
+    torch_b = torch.from_numpy(my_b.data)
+    torch_c = torch_a / torch_b
+
+    assert np.allclose(my_c.data, torch_c.numpy())
+
+
+def test_broadcasted_div_backward():
+    my_a = Tensor(np.random.randn(5, 5))
+    my_b = Tensor(np.random.randn(5))
+    my_c = my_a / my_b
+    my_c.backward()
+
+    torch_a = torch.from_numpy(my_a.data)
+    torch_a.requires_grad = True
+    torch_b = torch.from_numpy(my_b.data)
+    torch_b.requires_grad = True
+    torch_c = torch_a / torch_b
+    torch_c.backward(gradient=torch.ones_like(torch_c))
+
+    assert np.allclose(my_a.grad, torch_a.grad.numpy())
+    assert np.allclose(my_b.grad, torch_b.grad.numpy())
+
+
 def test_sigmoid_forward():
     ma = Tensor(np.random.randn(2, 2))
     mb = ma.sigmoid()

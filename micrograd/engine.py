@@ -71,6 +71,19 @@ class Tensor:
 
         return out
 
+    def __truediv__(self, other):
+        out = Tensor(self.data / other.data, (self, other), "/")
+
+        def _backward():
+            self.grad += micrograd.unbroadcast(out.grad / other.data, self.shape)
+            other.grad += micrograd.unbroadcast(
+                -(self.data / other.data**2) * out.grad, other.shape
+            )
+
+        out._backward = _backward
+
+        return out
+
     def relu(self):
         out = Tensor(np.maximum(0, self.data), (self,), "relu")
 
