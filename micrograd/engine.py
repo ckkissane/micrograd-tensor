@@ -90,3 +90,13 @@ class Tensor:
         out._backward = _backward
 
         return out
+
+    def transpose(self, dim0, dim1):
+        out = Tensor(self.data.swapaxes(dim0, dim1), (self,), "transpose")
+
+        def _backward():
+            self.grad += out.grad.swapaxes(dim0, dim1)
+
+        out._backward = _backward
+
+        return out

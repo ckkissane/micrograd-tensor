@@ -215,3 +215,28 @@ def test_reshape_backward():
     torch_out = torch_a.reshape(new_shape)
     torch_out.backward(gradient=torch.ones_like(torch_out))
     assert np.allclose(my_a.grad, torch_a.grad.numpy())
+
+
+def test_tranpose_forward():
+    k = np.random.randn(1, 2, 5, 4)
+
+    my_k = Tensor(k)
+    my_out = my_k.transpose(-1, -2)
+
+    torch_k = torch.as_tensor(k)
+    torch_out = torch_k.transpose(-1, -2)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_tranpose_backward():
+    k = np.random.randn(1, 2, 5, 4)
+
+    my_k = Tensor(k)
+    my_out = my_k.transpose(-1, -2)
+    my_out.backward()
+
+    torch_k = torch.as_tensor(k)
+    torch_k.requires_grad = True
+    torch_out = torch_k.transpose(-1, -2)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_k.grad, torch_k.grad.numpy())
