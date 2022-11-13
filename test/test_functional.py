@@ -56,16 +56,6 @@ def test_batched_cross_entropy_backward():
     assert np.allclose(ma.grad, ta.grad.numpy())
 
 
-def test_unbroadcast_add():
-    A = np.ones((5, 4))
-    B = np.ones(
-        4,
-    )
-    out = A + B
-    assert F.unbroadcast(out, A.shape).shape == A.shape
-    assert F.unbroadcast(out, B.shape).shape == B.shape
-
-
 # helper function to test conv
 def conv_ref(Z, weight, stride=1, padding=0):
     # NHWC -> NCHW

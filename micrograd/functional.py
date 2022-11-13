@@ -52,15 +52,6 @@ def batched_cross_entropy(input: Tensor, target):
     return out
 
 
-def unbroadcast(grad, shape):
-    # grad: np.array
-    # shape: tuple
-    new_shape = (1,) * (len(grad.shape) - len(shape)) + shape
-    axs = tuple(i for i, d in enumerate(new_shape) if d == 1)
-    out_grad = grad.sum(axis=axs, keepdims=True)
-    return out_grad.reshape(shape)
-
-
 def conv2d(Z, weight, stride=1, padding=0):
     """
     Args:
@@ -104,7 +95,7 @@ def conv2d(Z, weight, stride=1, padding=0):
             dilate_len = dilation + 1
             dilate_shape = (N, H * dilate_len, W * dilate_len, C_in)
             out = np.zeros(dilate_shape)
-            #TODO: optimize this?
+            # TODO: optimize this?
             for i in range(H):
                 for j in range(W):
                     out[:, i * dilate_len, j * dilate_len, :] = x[:, i, j, :]
