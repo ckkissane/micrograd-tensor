@@ -12,6 +12,7 @@ class Tensor:
     def __init__(self, data, _children=(), _op=""):
         self.data = data  # np.array
         self.grad = np.zeros_like(self.data)
+        self.shape = data.shape
         self._prev = set(_children)
         self._backward = lambda: None
         self._op = _op
