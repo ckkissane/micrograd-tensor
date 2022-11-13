@@ -1,11 +1,5 @@
 import numpy as np
-
-# TODO: move to different file?
-def unbroadcast(grad, shape):
-    new_shape = (1,) * (len(grad.shape) - len(shape)) + shape
-    axs = tuple(i for i, d in enumerate(new_shape) if d == 1)
-    out_grad = grad.sum(axis=axs, keepdims=True)
-    return out_grad.reshape(shape)
+import micrograd
 
 
 class Tensor:
@@ -70,8 +64,8 @@ class Tensor:
         out = Tensor(self.data + other.data, (self, other), "+")
 
         def _backward():
-            self.grad += unbroadcast(out.grad, self.data.shape)
-            other.grad += unbroadcast(out.grad, other.data.shape)
+            self.grad += micrograd.unbroadcast(out.grad, self.data.shape)
+            other.grad += micrograd.unbroadcast(out.grad, other.data.shape)
 
         out._backward = _backward
 
