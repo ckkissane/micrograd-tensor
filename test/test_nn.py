@@ -81,6 +81,8 @@ def test_linear_backward():
     tb = tlin(ta)
     tb.backward(gradient=torch.ones_like(tb))
     assert np.allclose(ma.grad, ta.grad.numpy())
+    assert np.allclose(mlin.weight.grad, tlin.weight.grad.T.detach().numpy())
+    assert np.allclose(mlin.bias.grad, tlin.bias.grad.detach().numpy())
 
 
 def test_batched_linear_forward():
@@ -112,6 +114,8 @@ def test_batched_linear_backward():
     tb = tlin(ta)
     tb.backward(gradient=torch.ones_like(tb))
     assert np.allclose(ma.grad, ta.grad.numpy())
+    assert np.allclose(mlin.weight.grad, tlin.weight.grad.T.detach().numpy())
+    assert np.allclose(mlin.bias.grad, tlin.bias.grad.detach().numpy())
 
 
 def test_conv_forward_no_padding_no_stride():
@@ -206,6 +210,9 @@ def test_conv_backward_no_padding_no_stride():
     torch_out = torch_conv(torch_Z)
     torch_out.backward(gradient=torch.ones_like(torch_out))
     assert np.allclose(my_Z.grad, torch_Z.grad.permute(0, 2, 3, 1).numpy())
+    assert np.allclose(
+        my_conv.weight.grad, torch_conv.weight.grad.permute(2, 3, 1, 0).numpy()
+    )
 
 
 def test_conv_backward_with_padding_no_stride():
@@ -227,6 +234,9 @@ def test_conv_backward_with_padding_no_stride():
     torch_out = torch_conv(torch_Z)
     torch_out.backward(gradient=torch.ones_like(torch_out))
     assert np.allclose(my_Z.grad, torch_Z.grad.permute(0, 2, 3, 1).numpy())
+    assert np.allclose(
+        my_conv.weight.grad, torch_conv.weight.grad.permute(2, 3, 1, 0).numpy()
+    )
 
 
 def test_conv_backward_with_stride_no_padding():
@@ -248,6 +258,9 @@ def test_conv_backward_with_stride_no_padding():
     torch_out = torch_conv(torch_Z)
     torch_out.backward(gradient=torch.ones_like(torch_out))
     assert np.allclose(my_Z.grad, torch_Z.grad.permute(0, 2, 3, 1).numpy())
+    assert np.allclose(
+        my_conv.weight.grad, torch_conv.weight.grad.permute(2, 3, 1, 0).numpy()
+    )
 
 
 def test_conv_backward_with_stride_and_padding():
@@ -272,3 +285,6 @@ def test_conv_backward_with_stride_and_padding():
     torch_out = torch_conv(torch_Z)
     torch_out.backward(gradient=torch.ones_like(torch_out))
     assert np.allclose(my_Z.grad, torch_Z.grad.permute(0, 2, 3, 1).numpy())
+    assert np.allclose(
+        my_conv.weight.grad, torch_conv.weight.grad.permute(2, 3, 1, 0).numpy()
+    )

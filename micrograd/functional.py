@@ -57,6 +57,7 @@ def conv2d(Z, weight, stride=1, padding=0):
     Args:
         Z: Tensor(N, H, W, C_in) input image
         weight: Tensor(K, K, C_in, C_out) conv filters
+        stride: int
         padding: int (padding to add to each size of image)
     """
 
