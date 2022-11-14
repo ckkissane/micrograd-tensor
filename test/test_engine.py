@@ -298,3 +298,59 @@ def test_tranpose_backward():
     torch_out = torch_k.transpose(-1, -2)
     torch_out.backward(gradient=torch.ones_like(torch_out))
     assert np.allclose(my_k.grad, torch_k.grad.numpy())
+
+
+def test_softmax_forward():
+    x = np.random.randn(1, 2, 5, 5)
+
+    my_x = Tensor(x)
+    my_out = my_x.softmax(dim=-1)
+
+    torch_x = torch.as_tensor(x)
+    torch_out = torch_x.softmax(dim=-1)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_softmax_backward_vector():
+    x = np.random.randn(5)
+    dim = -1
+
+    my_x = Tensor(x)
+    my_out = my_x.softmax(dim=dim)
+    my_out.backward()
+
+    torch_x = torch.as_tensor(x)
+    torch_x.requires_grad = True
+    torch_out = torch_x.softmax(dim=dim)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_x.grad, torch_x.grad.numpy())
+
+
+def test_softmax_backward_matrix():
+    x = np.random.randn(5, 5)
+    dim = 0
+
+    my_x = Tensor(x)
+    my_out = my_x.softmax(dim=dim)
+    my_out.backward()
+
+    torch_x = torch.as_tensor(x)
+    torch_x.requires_grad = True
+    torch_out = torch_x.softmax(dim=dim)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_x.grad, torch_x.grad.numpy())
+
+
+def test_softmax_backward_tensor():
+    x = np.random.randn(1, 2, 5, 5)
+    dim = -1
+
+    my_x = Tensor(x)
+    my_out = my_x.softmax(dim=dim)
+    my_out.backward()
+
+    torch_x = torch.as_tensor(x)
+    torch_x.requires_grad = True
+    torch_out = torch_x.softmax(dim=dim)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_x.grad, torch_x.grad.numpy())

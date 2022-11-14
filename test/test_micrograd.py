@@ -96,3 +96,23 @@ def test_where_backward_broadcasted():
     torch_out.backward(gradient=torch.ones_like(torch_out))
     assert np.allclose(my_y.grad, torch_y.grad.numpy())
     assert np.allclose(my_x.grad, torch_x.grad.numpy())
+
+
+def test_diag_embed_matrix():
+    x = np.arange(4, dtype=np.float32).reshape(2, 2)
+    my_x = Tensor(x)
+    my_out = micrograd.diag_embed(my_x)
+
+    torch_x = torch.as_tensor(x)
+    torch_out = torch.diag_embed(torch_x)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_diag_embed_tensor():
+    x = np.random.randn(1, 2, 5, 5)
+    my_x = Tensor(x)
+    my_out = micrograd.diag_embed(my_x)
+
+    torch_x = torch.as_tensor(x)
+    torch_out = torch.diag_embed(torch_x)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())

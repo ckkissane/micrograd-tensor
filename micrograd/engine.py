@@ -7,6 +7,7 @@ class Tensor:
         self.data = data  # np.array
         self.grad = np.zeros_like(self.data)
         self.shape = data.shape
+        self.ndim = data.ndim
         self._prev = set(_children)
         self._backward = lambda: None
         self._op = _op
@@ -109,6 +110,25 @@ class Tensor:
 
         def _backward():
             self.grad += out.grad.swapaxes(dim0, dim1)
+
+        out._backward = _backward
+
+        return out
+
+    def softmax(self, dim):
+        maxes = self.data.max(axis=dim, keepdims=True)
+        softmax_num = np.exp(self.data - maxes)
+        softmax_denom = softmax_num.sum(axis=dim, keepdims=True)
+        s = softmax_num / softmax_denom
+        out = Tensor(s, (self,), "softmax")
+
+        def _backward():
+            a = np.swapaxes(s, dim, -1)
+            local_deriv = micrograd.diag_embed(a).data - (
+                np.expand_dims(a, axis=-2) * np.expand_dims(a, axis=-1)
+            )
+            local_deriv = np.swapaxes(local_deriv, dim, -1)
+            self.grad = self.grad + out.grad.dot(local_deriv)
 
         out._backward = _backward
 
