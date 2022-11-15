@@ -33,7 +33,7 @@ def where(condition, x, y) -> Tensor:
     return out
 
 
-def diag_embed(x, offset=0, dim1=-1, dim2=-2):
+def diag_embed(x: Tensor, offset=0, dim1=-1, dim2=-2) -> Tensor:
     nDims = x.ndim + 1
     dim1 = dim1 + (dim1 < 0) * nDims
     dim2 = dim2 + (dim2 < 0) * nDims
@@ -43,8 +43,17 @@ def diag_embed(x, offset=0, dim1=-1, dim2=-2):
     sizes.insert(min(dim1, dim2), new_dim_len)
     sizes.insert(max(dim1, dim2), new_dim_len)
     res = np.zeros(sizes)
-    print("res", res.shape)
     diag = res.diagonal(offset, dim1, dim2)
     diag.setflags(write=1)
     np.copyto(diag, x.data)
     return Tensor(res)
+
+
+def sqrt(x: Tensor) -> Tensor:
+    out = Tensor(np.sqrt(x.data), (x,), "sqrt")
+
+    def _backward():
+        x.grad += 0.5 * x.data**-0.5 * out.grad
+
+    out._backward = _backward
+    return out

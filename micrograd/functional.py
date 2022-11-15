@@ -1,5 +1,6 @@
 import numpy as np
 from .engine import Tensor
+import micrograd
 
 
 def cross_entropy(input: Tensor, target: int):
@@ -119,4 +120,19 @@ def conv2d(Z, weight, stride=1, padding=0):
 
     out._backward = _backward
 
+    return out
+
+
+def layer_norm(input, normalized_shape, weight=None, bias=None, eps=1e-5):
+    # TODO: analytical derivative?
+    if weight is None:
+        weight = Tensor(np.ones(normalized_shape))
+    if bias is None:
+        bias = Tensor(np.zeros(normalized_shape))
+
+    axes = tuple(-i for i in range(1, len(normalized_shape) + 1))
+    eps = Tensor(np.array(eps))
+    out = (input - input.mean(dim=axes, keepdims=True)) / micrograd.sqrt(
+        input.var(dim=axes, unbiased=False, keepdims=True) + eps
+    ) * weight + bias
     return out

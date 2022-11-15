@@ -331,3 +331,120 @@ def test_module_parameters_with_list():
 
     model = MLP(10, [20, 10])
     assert set(model.manual_params()) == set(model.parameters())
+
+
+def test_layer_norm_forward():
+    batch, sentence_length, embedding_dim = 20, 5, 10
+    embedding = np.random.randn(batch, sentence_length, embedding_dim)
+    elementwise_affine = False
+
+    my_embedding = Tensor(embedding)
+    my_layernorm = nn.LayerNorm((embedding_dim,), elementwise_affine=elementwise_affine)
+    my_out = my_layernorm(my_embedding)
+
+    torch_embedding = torch.as_tensor(embedding)
+    torch_layernorm = torch.nn.LayerNorm(
+        (embedding_dim,), elementwise_affine=elementwise_affine
+    )
+    torch_out = torch_layernorm(torch_embedding)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_layer_norm_forward_elementwise_affine():
+    batch, sentence_length, embedding_dim = 20, 5, 10
+    embedding = np.random.randn(batch, sentence_length, embedding_dim)
+    elementwise_affine = True
+
+    my_embedding = Tensor(embedding)
+    my_layernorm = nn.LayerNorm((embedding_dim,), elementwise_affine=elementwise_affine)
+    my_out = my_layernorm(my_embedding)
+
+    torch_embedding = torch.as_tensor(embedding)
+    torch_layernorm = torch.nn.LayerNorm(
+        (embedding_dim,), elementwise_affine=elementwise_affine
+    )
+    torch_layernorm.weight = torch.nn.Parameter(
+        torch.as_tensor(my_layernorm.weight.data)
+    )
+    torch_layernorm.bias = torch.nn.Parameter(torch.as_tensor(my_layernorm.bias.data))
+    torch_out = torch_layernorm(torch_embedding)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_layer_norm_forward_image():
+    N, C, H, W = 20, 5, 10, 10
+    input = np.random.randn(N, C, H, W)
+    normalized_shape = [C, H, W]
+    elementwise_affine = True
+
+    my_input = Tensor(input)
+    my_layernorm = nn.LayerNorm(normalized_shape, elementwise_affine=elementwise_affine)
+    my_out = my_layernorm(my_input)
+
+    torch_input = torch.as_tensor(input)
+    torch_layernorm = torch.nn.LayerNorm(
+        normalized_shape, elementwise_affine=elementwise_affine
+    )
+    torch_layernorm.weight = torch.nn.Parameter(
+        torch.as_tensor(my_layernorm.weight.data)
+    )
+    torch_layernorm.bias = torch.nn.Parameter(torch.as_tensor(my_layernorm.bias.data))
+    torch_out = torch_layernorm(torch_input)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_layer_norm_backward_elementwise_affine():
+    batch, sentence_length, embedding_dim = 20, 5, 10
+    embedding = np.random.randn(batch, sentence_length, embedding_dim)
+    elementwise_affine = True
+
+    my_embedding = Tensor(embedding)
+    my_layernorm = nn.LayerNorm((embedding_dim,), elementwise_affine=elementwise_affine)
+    my_out = my_layernorm(my_embedding)
+    my_out.backward()
+
+    torch_embedding = torch.as_tensor(embedding)
+    torch_embedding.requires_grad = True
+    torch_layernorm = torch.nn.LayerNorm(
+        (embedding_dim,), elementwise_affine=elementwise_affine
+    )
+    torch_layernorm.weight = torch.nn.Parameter(
+        torch.as_tensor(my_layernorm.weight.data)
+    )
+    torch_layernorm.weight.requires_grad = True
+    torch_layernorm.bias = torch.nn.Parameter(torch.as_tensor(my_layernorm.bias.data))
+    torch_layernorm.bias.requires_grad = True
+    torch_out = torch_layernorm(torch_embedding)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_embedding.grad, torch_embedding.grad.numpy())
+    assert np.allclose(my_layernorm.weight.grad, torch_layernorm.weight.grad.numpy())
+    assert np.allclose(my_layernorm.bias.grad, torch_layernorm.bias.grad.numpy())
+
+
+def test_layer_norm_backward_image():
+    N, C, H, W = 20, 5, 10, 10
+    input = np.random.randn(N, C, H, W)
+    normalized_shape = [C, H, W]
+    elementwise_affine = True
+
+    my_input = Tensor(input)
+    my_layernorm = nn.LayerNorm(normalized_shape, elementwise_affine=elementwise_affine)
+    my_out = my_layernorm(my_input)
+    my_out.backward()
+
+    torch_input = torch.as_tensor(input)
+    torch_input.requires_grad = True
+    torch_layernorm = torch.nn.LayerNorm(
+        normalized_shape, elementwise_affine=elementwise_affine
+    )
+    torch_layernorm.weight = torch.nn.Parameter(
+        torch.as_tensor(my_layernorm.weight.data)
+    )
+    torch_layernorm.weight.requires_grad = True
+    torch_layernorm.bias = torch.nn.Parameter(torch.as_tensor(my_layernorm.bias.data))
+    torch_layernorm.bias.requires_grad = True
+    torch_out = torch_layernorm(torch_input)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_input.grad, torch_input.grad.numpy())
+    assert np.allclose(my_layernorm.weight.grad, torch_layernorm.weight.grad.numpy())
+    assert np.allclose(my_layernorm.bias.grad, torch_layernorm.bias.grad.numpy())

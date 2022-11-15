@@ -1,6 +1,6 @@
 import numpy as np
 from .engine import Tensor
-from .functional import conv2d
+from .functional import conv2d, layer_norm
 from typing import List
 
 
@@ -109,3 +109,31 @@ class Conv2d(Module):
 
     def parameters(self):
         return [self.weight]
+
+
+class LayerNorm(Module):
+    def __init__(self, normalized_shape, eps=1e-05, elementwise_affine=True):
+        self.normalized_shape = normalized_shape
+        self.eps = eps
+        self.elementwise_affine = elementwise_affine
+        self.weight = None
+        self.bias = None
+        if elementwise_affine:
+            self.weight = Tensor(np.ones(normalized_shape))
+            self.bias = Tensor(np.zeros(normalized_shape))
+
+    def __call__(self, x: Tensor) -> Tensor:
+        return layer_norm(
+            x, self.normalized_shape, weight=self.weight, bias=self.bias, eps=self.eps
+        )
+
+    def __repr__(self):
+        return f"LayerNorm(normalized_shape={self.normalized_shape}, eps={self.eps}, elementwise_affine={self.elementwise_affine}"
+
+    def parameters(self):
+        res = []
+        if self.weight:
+            res.append(self.weight)
+        if self.bias:
+            res.append(self.bias)
+        return res

@@ -72,6 +72,35 @@ class Tensor:
 
         return out
 
+    def __sub__(self, other):
+        out = Tensor(
+            self.data - other.data,
+            (
+                self,
+                other,
+            ),
+            "-",
+        )
+
+        def _backward():
+            self.grad += micrograd.unbroadcast(out.grad, self.shape)
+            other.grad += micrograd.unbroadcast(-out.grad, other.shape)
+
+        out._backward = _backward
+
+        return out
+
+    def __mul__(self, other):
+        out = Tensor(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += micrograd.unbroadcast(other.data * out.grad, self.shape)
+            other.grad += micrograd.unbroadcast(self.data * out.grad, other.shape)
+
+        out._backward = _backward
+
+        return out
+
     def __truediv__(self, other):
         out = Tensor(self.data / other.data, (self, other), "/")
 
@@ -129,6 +158,60 @@ class Tensor:
             )
             local_deriv = np.swapaxes(local_deriv, dim, -1)
             self.grad = self.grad + out.grad.dot(local_deriv)
+
+        out._backward = _backward
+
+        return out
+
+    def mean(self, dim=None, keepdims=False):
+        out = Tensor(self.data.mean(axis=dim, keepdims=keepdims), (self,), "mean")
+
+        def _backward():
+            if not dim:
+                denom = self.data.size
+            elif isinstance(
+                dim,
+                (
+                    tuple,
+                    list,
+                ),
+            ):
+                denom = np.prod([self.data.shape[d] for d in dim])
+            else:
+                denom = self.data.shape[dim]
+            out_grad = out.grad if keepdims else np.expand_dims(out.grad, axis=dim)
+            self.grad += out_grad / denom
+
+        out._backward = _backward
+
+        return out
+
+    def var(self, dim=None, unbiased=True, keepdims=False):
+        out = Tensor(
+            self.data.var(axis=dim, ddof=unbiased, keepdims=keepdims), (self,), "var"
+        )
+
+        def _backward():
+            if not dim:
+                denom = self.data.size
+            elif isinstance(
+                dim,
+                (
+                    tuple,
+                    list,
+                ),
+            ):
+                denom = np.prod([self.data.shape[d] for d in dim])
+            else:
+                denom = self.data.shape[dim]
+
+            if unbiased:
+                denom -= 1
+
+            out_grad = out.grad if keepdims else np.expand_dims(out.grad, axis=dim)
+            mu = self.data.mean(axis=dim, keepdims=True)
+            local_deriv = (2.0 / denom) * (self.data - mu)
+            self.grad += local_deriv * out_grad
 
         out._backward = _backward
 

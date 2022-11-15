@@ -61,6 +61,138 @@ def test_broadcasted_add_backward():
     assert np.allclose(mb.grad, tb.grad.numpy())
 
 
+def test_sub_forward():
+    a = np.random.randn(5, 10, 32)
+    b = np.random.randn(5, 10, 32)
+
+    my_a = Tensor(a)
+    my_b = Tensor(b)
+    my_out = my_a - my_b
+
+    torch_a = torch.as_tensor(a)
+    torch_b = torch.as_tensor(b)
+    torch_out = torch_a - torch_b
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_sub_forward_broadcast():
+    a = np.random.randn(5, 10, 32)
+    b = np.random.randn(32)
+
+    my_a = Tensor(a)
+    my_b = Tensor(b)
+    my_out = my_a - my_b
+
+    torch_a = torch.as_tensor(a)
+    torch_b = torch.as_tensor(b)
+    torch_out = torch_a - torch_b
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_sub_backward():
+    a = np.random.randn(5, 10, 32)
+    b = np.random.randn(5, 10, 32)
+
+    my_a = Tensor(a)
+    my_b = Tensor(b)
+    my_out = my_a - my_b
+    my_out.backward()
+
+    torch_a = torch.as_tensor(a)
+    torch_a.requires_grad = True
+    torch_b = torch.as_tensor(b)
+    torch_b.requires_grad = True
+    torch_out = torch_a - torch_b
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_a.grad, torch_a.grad.numpy())
+    assert np.allclose(my_b.grad, torch_b.grad.numpy())
+
+
+def test_sub_backward_broadcast():
+    a = np.random.randn(5, 10, 32)
+    b = np.random.randn(32)
+
+    my_a = Tensor(a)
+    my_b = Tensor(b)
+    my_out = my_a - my_b
+    my_out.backward()
+
+    torch_a = torch.as_tensor(a)
+    torch_a.requires_grad = True
+    torch_b = torch.as_tensor(b)
+    torch_b.requires_grad = True
+    torch_out = torch_a - torch_b
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_a.grad, torch_a.grad.numpy())
+    assert np.allclose(my_b.grad, torch_b.grad.numpy())
+
+
+def test_mul_forward():
+    a = np.random.randn(5, 10, 32)
+    b = np.random.randn(5, 10, 32)
+
+    my_a = Tensor(a)
+    my_b = Tensor(b)
+    my_out = my_a * my_b
+
+    torch_a = torch.as_tensor(a)
+    torch_b = torch.as_tensor(b)
+    torch_out = torch_a * torch_b
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_mul_forward_broadcast():
+    a = np.random.randn(5, 10, 32)
+    b = np.random.randn(32)
+
+    my_a = Tensor(a)
+    my_b = Tensor(b)
+    my_out = my_a * my_b
+
+    torch_a = torch.as_tensor(a)
+    torch_b = torch.as_tensor(b)
+    torch_out = torch_a * torch_b
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_mul_backward():
+    a = np.random.randn(5, 10, 32)
+    b = np.random.randn(5, 10, 32)
+
+    my_a = Tensor(a)
+    my_b = Tensor(b)
+    my_out = my_a * my_b
+    my_out.backward()
+
+    torch_a = torch.as_tensor(a)
+    torch_a.requires_grad = True
+    torch_b = torch.as_tensor(b)
+    torch_b.requires_grad = True
+    torch_out = torch_a * torch_b
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_a.grad, torch_a.grad.numpy())
+    assert np.allclose(my_b.grad, torch_b.grad.numpy())
+
+
+def test_mul_backward_broadcast():
+    a = np.random.randn(5, 10, 32)
+    b = np.random.randn(32)
+
+    my_a = Tensor(a)
+    my_b = Tensor(b)
+    my_out = my_a * my_b
+    my_out.backward()
+
+    torch_a = torch.as_tensor(a)
+    torch_a.requires_grad = True
+    torch_b = torch.as_tensor(b)
+    torch_b.requires_grad = True
+    torch_out = torch_a * torch_b
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_a.grad, torch_a.grad.numpy())
+    assert np.allclose(my_b.grad, torch_b.grad.numpy())
+
+
 def test_div_forward():
     my_a = Tensor(np.random.randn(5))
     my_b = Tensor(np.random.randn(5))
@@ -352,5 +484,349 @@ def test_softmax_backward_tensor():
     torch_x = torch.as_tensor(x)
     torch_x.requires_grad = True
     torch_out = torch_x.softmax(dim=dim)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_x.grad, torch_x.grad.numpy())
+
+
+def test_mean_forward():
+    x = np.random.randn(1, 2, 5, 5)
+    dim = -1
+
+    my_x = Tensor(x)
+    my_out = my_x.mean(dim=dim)
+
+    torch_x = torch.as_tensor(x)
+    torch_out = torch_x.mean(dim=dim)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_mean_forward_keepdims():
+    x = np.random.randn(1, 2, 5, 5)
+    dim = -1
+
+    my_x = Tensor(x)
+    my_out = my_x.mean(dim=dim, keepdims=True)
+
+    torch_x = torch.as_tensor(x)
+    torch_out = torch_x.mean(dim=dim, keepdims=True)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_mean_forward_multi_dim():
+    x = np.random.randn(1, 2, 5, 5)
+    dims = (-1, -2, -3)
+
+    my_x = Tensor(x)
+    my_out = my_x.mean(dim=dims)
+
+    torch_x = torch.as_tensor(x)
+    torch_out = torch_x.mean(dim=dims)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_mean_forward_multi_dim_keepdims():
+    x = np.random.randn(1, 2, 5, 5)
+    dims = (-1, -2, -3)
+
+    my_x = Tensor(x)
+    my_out = my_x.mean(dim=dims, keepdims=True)
+
+    torch_x = torch.as_tensor(x)
+    torch_out = torch_x.mean(dim=dims, keepdims=True)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_mean_backward():
+    x = np.random.randn(1, 2, 5, 5)
+    dim = -1
+
+    my_x = Tensor(x)
+    my_out = my_x.mean(dim=dim)
+    my_out.backward()
+
+    torch_x = torch.as_tensor(x)
+    torch_x.requires_grad = True
+    torch_out = torch_x.mean(dim=dim)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_x.grad, torch_x.grad.numpy())
+
+
+def test_mean_backward_keepdims():
+    x = np.random.randn(1, 2, 5, 5)
+    dim = -1
+
+    my_x = Tensor(x)
+    my_out = my_x.mean(dim=dim, keepdims=True)
+    my_out.backward()
+
+    torch_x = torch.as_tensor(x)
+    torch_x.requires_grad = True
+    torch_out = torch_x.mean(dim=dim, keepdims=True)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_x.grad, torch_x.grad.numpy())
+
+
+def test_mean_backward_multi_dim():
+    x = np.random.randn(1, 2, 5, 5)
+    dims = (-1, -2, -3)
+
+    my_x = Tensor(x)
+    my_out = my_x.mean(dim=dims)
+    my_out.backward()
+
+    torch_x = torch.as_tensor(x)
+    torch_x.requires_grad = True
+    torch_out = torch_x.mean(dim=dims)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_x.grad, torch_x.grad.numpy())
+
+
+def test_mean_backward_multi_dim_keepdims():
+    x = np.random.randn(1, 2, 5, 5)
+    dims = (-1, -2, -3)
+
+    my_x = Tensor(x)
+    my_out = my_x.mean(dim=dims, keepdims=True)
+    my_out.backward()
+
+    torch_x = torch.as_tensor(x)
+    torch_x.requires_grad = True
+    torch_out = torch_x.mean(dim=dims, keepdims=True)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_x.grad, torch_x.grad.numpy())
+
+
+def test_var_unbiased_forward():
+    x = np.random.randn(1, 2, 5, 5)
+    unbiased = True
+    dim = -1
+
+    my_x = Tensor(x)
+    my_out = my_x.var(dim=dim, unbiased=unbiased)
+
+    torch_x = torch.as_tensor(x)
+    torch_out = torch_x.var(dim=dim, unbiased=unbiased)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_var_biased_forward():
+    x = np.random.randn(1, 2, 5, 5)
+    unbiased = False
+    dim = -1
+
+    my_x = Tensor(x)
+    my_out = my_x.var(dim=dim, unbiased=unbiased)
+
+    torch_x = torch.as_tensor(x)
+    torch_out = torch_x.var(dim=dim, unbiased=unbiased)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_var_unbiased_forward_keepdims():
+    x = np.random.randn(1, 2, 5, 5)
+    unbiased = True
+    dim = -1
+
+    my_x = Tensor(x)
+    my_out = my_x.var(dim=dim, unbiased=unbiased, keepdims=True)
+
+    torch_x = torch.as_tensor(x)
+    torch_out = torch_x.var(dim=dim, unbiased=unbiased, keepdims=True)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_var_biased_forward_keepdims():
+    x = np.random.randn(1, 2, 5, 5)
+    unbiased = False
+    dim = -1
+
+    my_x = Tensor(x)
+    my_out = my_x.var(dim=dim, unbiased=unbiased, keepdims=True)
+
+    torch_x = torch.as_tensor(x)
+    torch_out = torch_x.var(dim=dim, unbiased=unbiased, keepdims=True)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_var_forward_unbiased_multi_dim():
+    x = np.random.randn(1, 2, 5, 5)
+    dims = (-1, -2, -3)
+    unbiased = True
+
+    my_x = Tensor(x)
+    my_out = my_x.var(dim=dims, unbiased=unbiased)
+
+    torch_x = torch.as_tensor(x)
+    torch_out = torch_x.var(dim=dims, unbiased=unbiased)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_var_forward_biased_multi_dim():
+    x = np.random.randn(1, 2, 5, 5)
+    dims = (-1, -2, -3)
+    unbiased = False
+
+    my_x = Tensor(x)
+    my_out = my_x.var(dim=dims, unbiased=unbiased)
+
+    torch_x = torch.as_tensor(x)
+    torch_out = torch_x.var(dim=dims, unbiased=unbiased)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_var_forward_unbiased_multi_dim_keepdims():
+    x = np.random.randn(1, 2, 5, 5)
+    dims = (-1, -2, -3)
+    unbiased = True
+
+    my_x = Tensor(x)
+    my_out = my_x.var(dim=dims, keepdims=True, unbiased=unbiased)
+
+    torch_x = torch.as_tensor(x)
+    torch_out = torch_x.var(dim=dims, keepdims=True, unbiased=unbiased)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_var_forward_biased_multi_dim_keepdims():
+    x = np.random.randn(1, 2, 5, 5)
+    dims = (-1, -2, -3)
+    unbiased = False
+
+    my_x = Tensor(x)
+    my_out = my_x.var(dim=dims, keepdims=True, unbiased=unbiased)
+
+    torch_x = torch.as_tensor(x)
+    torch_out = torch_x.var(dim=dims, keepdims=True, unbiased=unbiased)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_var_biased_backward():
+    x = np.random.randn(1, 2, 5, 5)
+    unbiased = False
+    dim = -1
+
+    my_x = Tensor(x)
+    my_out = my_x.var(dim=dim, unbiased=unbiased)
+    my_out.backward()
+
+    torch_x = torch.as_tensor(x)
+    torch_x.requires_grad = True
+    torch_out = torch_x.var(dim=dim, unbiased=unbiased)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_x.grad, torch_x.grad.numpy())
+
+
+def test_var_unbiased_backward():
+    x = np.random.randn(1, 2, 5, 5)
+    unbiased = True
+    dim = -1
+
+    my_x = Tensor(x)
+    my_out = my_x.var(dim=dim, unbiased=unbiased)
+    my_out.backward()
+
+    torch_x = torch.as_tensor(x)
+    torch_x.requires_grad = True
+    torch_out = torch_x.var(dim=dim, unbiased=unbiased)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_x.grad, torch_x.grad.numpy())
+
+
+def test_var_biased_backward_keepdims():
+    x = np.random.randn(1, 2, 5, 5)
+    unbiased = False
+    keepdims = True
+    dim = -1
+
+    my_x = Tensor(x)
+    my_out = my_x.var(dim=dim, unbiased=unbiased, keepdims=keepdims)
+    my_out.backward()
+
+    torch_x = torch.as_tensor(x)
+    torch_x.requires_grad = True
+    torch_out = torch_x.var(dim=dim, unbiased=unbiased, keepdims=keepdims)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_x.grad, torch_x.grad.numpy())
+
+
+def test_var_unbiased_backward_keepdims():
+    x = np.random.randn(1, 2, 5, 5)
+    unbiased = False
+    keepdims = True
+    dim = -1
+
+    my_x = Tensor(x)
+    my_out = my_x.var(dim=dim, unbiased=unbiased, keepdims=keepdims)
+    my_out.backward()
+
+    torch_x = torch.as_tensor(x)
+    torch_x.requires_grad = True
+    torch_out = torch_x.var(dim=dim, unbiased=unbiased, keepdims=keepdims)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_x.grad, torch_x.grad.numpy())
+
+
+def test_var_backward_unbiased_multi_dim():
+    x = np.random.randn(1, 2, 5, 5)
+    dims = (-1, -2, -3)
+    unbiased = True
+
+    my_x = Tensor(x)
+    my_out = my_x.var(dim=dims, unbiased=unbiased)
+    my_out.backward()
+
+    torch_x = torch.as_tensor(x)
+    torch_x.requires_grad = True
+    torch_out = torch_x.var(dim=dims, unbiased=unbiased)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_x.grad, torch_x.grad.numpy())
+
+
+def test_var_backward_biased_multi_dim():
+    x = np.random.randn(1, 2, 5, 5)
+    dims = (-1, -2, -3)
+    unbiased = False
+
+    my_x = Tensor(x)
+    my_out = my_x.var(dim=dims, unbiased=unbiased)
+    my_out.backward()
+
+    torch_x = torch.as_tensor(x)
+    torch_x.requires_grad = True
+    torch_out = torch_x.var(dim=dims, unbiased=unbiased)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_x.grad, torch_x.grad.numpy())
+
+
+def test_var_backward_unbiased_multi_dim_keepdims():
+    x = np.random.randn(1, 2, 5, 5)
+    dims = (-1, -2, -3)
+    unbiased = True
+    keepdims = True
+
+    my_x = Tensor(x)
+    my_out = my_x.var(dim=dims, unbiased=unbiased, keepdims=keepdims)
+    my_out.backward()
+
+    torch_x = torch.as_tensor(x)
+    torch_x.requires_grad = True
+    torch_out = torch_x.var(dim=dims, unbiased=unbiased, keepdims=keepdims)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_x.grad, torch_x.grad.numpy())
+
+
+def test_var_backward_biased_multi_dim_keepdims():
+    x = np.random.randn(1, 2, 5, 5)
+    dims = (-1, -2, -3)
+    unbiased = False
+    keepdims = True
+
+    my_x = Tensor(x)
+    my_out = my_x.var(dim=dims, unbiased=unbiased, keepdims=keepdims)
+    my_out.backward()
+
+    torch_x = torch.as_tensor(x)
+    torch_x.requires_grad = True
+    torch_out = torch_x.var(dim=dims, unbiased=unbiased, keepdims=keepdims)
     torch_out.backward(gradient=torch.ones_like(torch_out))
     assert np.allclose(my_x.grad, torch_x.grad.numpy())

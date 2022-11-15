@@ -116,3 +116,28 @@ def test_diag_embed_tensor():
     torch_x = torch.as_tensor(x)
     torch_out = torch.diag_embed(torch_x)
     assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_sqrt_forward():
+    x = np.arange(1, 4)
+
+    my_x = Tensor(x)
+    my_out = micrograd.sqrt(my_x)
+
+    torch_x = torch.as_tensor(x)
+    torch_out = torch.sqrt(torch_x)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_sqrt_backward():
+    x = np.arange(1, 4, dtype=np.float32)
+
+    my_x = Tensor(x)
+    my_out = micrograd.sqrt(my_x)
+    my_out.backward()
+
+    torch_x = torch.as_tensor(x)
+    torch_x.requires_grad = True
+    torch_out = torch.sqrt(torch_x)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_x.grad, torch_x.grad.numpy())
