@@ -32,11 +32,11 @@ def test_cross_entropy_backward():
 def test_batched_cross_entropy_forward():
     batch_size = 2
     ma = Tensor(np.random.randn(batch_size, 5))
-    mtarget = np.ones(batch_size, dtype=int)
+    mtarget = Tensor(np.ones(batch_size, dtype=int))
     mout = F.batched_cross_entropy(ma, mtarget)
 
     ta = torch.as_tensor(ma.data)
-    ttarget = torch.as_tensor(mtarget)
+    ttarget = torch.as_tensor(mtarget.data)
     tout = torch.nn.functional.cross_entropy(ta, ttarget)
     assert np.allclose(mout.data, tout.numpy())
 
@@ -44,13 +44,13 @@ def test_batched_cross_entropy_forward():
 def test_batched_cross_entropy_backward():
     batch_size = 2
     ma = Tensor(np.random.randn(batch_size, 5))
-    mtarget = np.ones(batch_size, dtype=int)
+    mtarget = Tensor(np.ones(batch_size, dtype=int))
     mout = F.batched_cross_entropy(ma, mtarget)
     mout.backward()
 
     ta = torch.as_tensor(ma.data)
     ta.requires_grad = True
-    ttarget = torch.as_tensor(mtarget)
+    ttarget = torch.as_tensor(mtarget.data)
     tout = torch.nn.functional.cross_entropy(ta, ttarget)
     tout.backward(gradient=torch.ones_like(tout))
     assert np.allclose(ma.grad, ta.grad.numpy())

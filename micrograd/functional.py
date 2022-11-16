@@ -27,7 +27,7 @@ def cross_entropy(input: Tensor, target: int):
     return out
 
 
-def batched_cross_entropy(input: Tensor, target):
+def batched_cross_entropy(input: Tensor, target: Tensor) -> Tensor:
     """
     Computes the cross entropy loss between input logits and target
 
@@ -39,13 +39,13 @@ def batched_cross_entropy(input: Tensor, target):
     softmax_num = np.exp(input.data - input_max)
     softmax_denom = np.sum(softmax_num, axis=-1, keepdims=True)
     probs = softmax_num / softmax_denom
-    p = probs[np.arange(probs.shape[0]), target]
+    p = probs[np.arange(probs.shape[0]), target.data]
     out = Tensor(-np.log(p).mean(keepdims=True), (input,), "cross_entropy")
 
     def _backward():
         batch_size = probs.shape[0]
         input.grad = np.copy(probs)
-        input.grad[np.arange(batch_size), target] -= 1.0
+        input.grad[np.arange(batch_size), target.data] -= 1.0
         input.grad /= batch_size
 
     out._backward = _backward
