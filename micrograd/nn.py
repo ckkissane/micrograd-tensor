@@ -1,6 +1,6 @@
 import numpy as np
 from .engine import Tensor
-from .functional import conv2d, layer_norm
+from .functional import conv2d, layer_norm, embedding
 from typing import List
 
 
@@ -137,3 +137,19 @@ class LayerNorm(Module):
         if self.bias:
             res.append(self.bias)
         return res
+
+
+class Embedding(Module):
+    def __init__(self, num_embeddings, embedding_dim):
+        self.num_embeddings = num_embeddings
+        self.embedding_dim = embedding_dim
+        self.weight = Tensor(np.random.randn(num_embeddings, embedding_dim))
+
+    def __call__(self, x: Tensor) -> Tensor:
+        return embedding(x, self.weight)
+
+    def __repr__(self):
+        return f"Embedding(num_embeddings={self.num_embeddings}, embedding_dim={self.embedding_dim}"
+
+    def parameters(self):
+        return [self.weight]

@@ -335,3 +335,34 @@ def test_layer_norm_backward_image():
     assert np.allclose(my_input.grad, torch_input.grad.numpy())
     assert np.allclose(my_weight.grad, torch_weight.grad.numpy())
     assert np.allclose(my_bias.grad, torch_bias.grad.numpy())
+
+
+def test_embedding_forward():
+    input = np.array([[1, 2, 4, 5], [4, 3, 2, 9]])
+    weight = np.random.randn(10, 3)
+
+    my_input = Tensor(input)
+    my_weight = Tensor(weight)
+    my_out = F.embedding(my_input, my_weight)
+
+    torch_input = torch.as_tensor(input)
+    torch_weight = torch.as_tensor(weight)
+    torch_out = torch.nn.functional.embedding(torch_input, torch_weight)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_embedding_backward():
+    input = np.array([[1, 2, 4, 5], [4, 3, 2, 9]])
+    weight = np.random.randn(10, 3)
+
+    my_input = Tensor(input)
+    my_weight = Tensor(weight)
+    my_out = F.embedding(my_input, my_weight)
+    my_out.backward()
+
+    torch_input = torch.as_tensor(input)
+    torch_weight = torch.as_tensor(weight)
+    torch_weight.requires_grad = True
+    torch_out = torch.nn.functional.embedding(torch_input, torch_weight)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_weight.grad, torch_weight.grad.numpy())

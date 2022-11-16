@@ -448,3 +448,39 @@ def test_layer_norm_backward_image():
     assert np.allclose(my_input.grad, torch_input.grad.numpy())
     assert np.allclose(my_layernorm.weight.grad, torch_layernorm.weight.grad.numpy())
     assert np.allclose(my_layernorm.bias.grad, torch_layernorm.bias.grad.numpy())
+
+
+def test_embedding_forward():
+    input = np.array([[1, 2, 4, 5], [4, 3, 2, 9]])
+    num_embeddings, embedding_dim = 10, 3
+
+    my_input = Tensor(input)
+    my_embedding = nn.Embedding(num_embeddings, embedding_dim)
+    my_out = my_embedding(my_input)
+
+    torch_input = torch.as_tensor(input)
+    torch_embedding = torch.nn.Embedding(num_embeddings, embedding_dim)
+    torch_embedding.weight = torch.nn.Parameter(
+        torch.as_tensor(my_embedding.weight.data)
+    )
+    torch_out = torch_embedding(torch_input)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_embedding_backward():
+    input = np.array([[1, 2, 4, 5], [4, 3, 2, 9]])
+    num_embeddings, embedding_dim = 10, 3
+
+    my_input = Tensor(input)
+    my_embedding = nn.Embedding(num_embeddings, embedding_dim)
+    my_out = my_embedding(my_input)
+    my_out.backward()
+
+    torch_input = torch.as_tensor(input)
+    torch_embedding = torch.nn.Embedding(num_embeddings, embedding_dim)
+    torch_embedding.weight = torch.nn.Parameter(
+        torch.as_tensor(my_embedding.weight.data)
+    )
+    torch_out = torch_embedding(torch_input)
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_embedding.weight.grad, torch_embedding.weight.grad.numpy())

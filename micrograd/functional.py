@@ -136,3 +136,18 @@ def layer_norm(input, normalized_shape, weight=None, bias=None, eps=1e-5):
         input.var(dim=axes, unbiased=False, keepdims=True) + eps
     ) * weight + bias
     return out
+
+
+def embedding(input: Tensor, weight: Tensor) -> Tensor:
+    out = Tensor(weight.data[input.data], (weight,), "embedding")
+
+    def _backward():
+        reshaped_input = input.data.reshape(-1)
+        reshaped_out_grad = out.grad.reshape(-1)
+        # TODO: speed up
+        for idx, g in zip(reshaped_input, reshaped_out_grad):
+            weight.grad[idx] += g
+
+    out._backward = _backward
+
+    return out
