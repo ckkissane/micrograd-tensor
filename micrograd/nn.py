@@ -33,6 +33,18 @@ class Module:
     def parameters(self) -> List[Tensor]:
         return get_parameters(self.__dict__)
 
+    def __repr__(self):
+        res = [type(self).__name__ + "("]
+        for child in self.__dict__.values():
+            child_str = repr(child) + ","
+            child_lines = child_str.split("\n")
+            for i, line in enumerate(child_lines):
+                child_lines[i] = "\t" + line
+            child_str = "\n".join(child_lines)
+            res.append(child_str)
+        res.append(")")
+        return "\n".join(res)
+
 
 class Sigmoid(Module):
     def __call__(self, x: Tensor):
@@ -105,7 +117,7 @@ class Conv2d(Module):
         return conv2d(Z, self.weight, stride=self.stride, padding=self.padding)
 
     def __repr__(self):
-        return f"Conv2d(C_in={self.C_in}, C_out={self.C_out}, K={self.K}, stride={self.stride}, padding={self.padding}"
+        return f"Conv2d(C_in={self.C_in}, C_out={self.C_out}, K={self.K}, stride={self.stride}, padding={self.padding})"
 
     def parameters(self):
         return [self.weight]
@@ -149,7 +161,24 @@ class Embedding(Module):
         return embedding(x, self.weight)
 
     def __repr__(self):
-        return f"Embedding(num_embeddings={self.num_embeddings}, embedding_dim={self.embedding_dim}"
+        return f"Embedding(num_embeddings={self.num_embeddings}, embedding_dim={self.embedding_dim})"
 
     def parameters(self):
         return [self.weight]
+
+
+class Sequential(Module):
+    def __init__(self, *args):
+        self.layers = list(args)
+
+    def __call__(self, x: Tensor) -> Tensor:
+        for layer in self.layers:
+            x = layer(x)
+        return x
+
+    def __repr__(self):
+        res = ["Sequential("]
+        for child in self.layers:
+            res.append("\t" + repr(child) + ",")
+        res.append(")")
+        return "\n".join(res)

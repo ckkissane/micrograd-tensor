@@ -484,3 +484,46 @@ def test_embedding_backward():
     torch_out = torch_embedding(torch_input)
     torch_out.backward(gradient=torch.ones_like(torch_out))
     assert np.allclose(my_embedding.weight.grad, torch_embedding.weight.grad.numpy())
+
+
+def test_sequential_forward():
+    input = np.random.randn(1, 1, 28, 28)
+
+    my_input = Tensor(input.transpose(0, 2, 3, 1))
+    my_conv = nn.Conv2d(1, 6, K=5, stride=2, padding=2)
+    my_sequential = nn.Sequential(my_conv, nn.ReLU())
+    my_out = my_sequential(my_input)
+
+    torch_input = torch.as_tensor(input)
+    torch_conv = torch.nn.Conv2d(1, 6, kernel_size=5, stride=2, padding=2, bias=False)
+    torch_conv.weight = torch.nn.Parameter(
+        torch.as_tensor(my_conv.weight.data).permute(3, 2, 0, 1)
+    )
+    torch_sequential = torch.nn.Sequential(torch_conv, torch.nn.ReLU())
+    torch_out = torch_sequential(torch_input).permute(0, 2, 3, 1)
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
+
+
+def test_sequential_parameters():
+    class CNN(nn.Module):
+        def __init__(self):
+            self.conv1 = nn.Conv2d(1, 6, K=5, stride=2, padding=2)
+            self.conv2 = nn.Conv2d(6, 16, K=5, stride=2)
+
+            self.lin1 = nn.Linear(400, 120)
+            self.lin2 = nn.Linear(120, 80)
+            self.lin3 = nn.Linear(80, 10)
+
+    class SequentialCNN(nn.Module):
+        def __init__(self):
+            self.layers = nn.Sequential(
+                nn.Conv2d(1, 6, K=5, stride=2, padding=2),
+                nn.Conv2d(6, 16, K=5, stride=2),
+                nn.Linear(400, 120),
+                nn.Linear(120, 80),
+                nn.Linear(80, 10),
+            )
+
+    model = CNN()
+    sequential_model = SequentialCNN()
+    assert len(model.parameters()) == len(sequential_model.parameters())
