@@ -29,7 +29,7 @@ class Tensor:
 
         return out
 
-    def backward(self):
+    def backward(self, gradient=None):
         topo = []
         visited = set()
 
@@ -42,7 +42,7 @@ class Tensor:
 
         build_topo(self)
 
-        self.grad = np.ones_like(self.data)
+        self.grad = gradient if gradient is not None else np.ones_like(self.data)
         for node in reversed(topo):
             node._backward()
 
@@ -51,11 +51,19 @@ class Tensor:
 
         def _backward():
             # TODO: make this more robust for different vector / matrix shapes
-            self.grad += out.grad.dot(other.data.T)
-            if out.grad.ndim == 1:
+            if out.grad.ndim == 1:  # vector matrix product
+                self.grad += out.grad.dot(other.data.T)
                 other.grad += self.data[None, ...].T.dot(out.grad[None, ...])
-            else:
+            elif out.grad.ndim == 2:  # standard 2D  matmul
+                self.grad += out.grad.dot(other.data.T)
                 other.grad += self.data.T.dot(out.grad)
+            else:  # batched matmul
+                self.grad += micrograd.unbroadcast(
+                    out.grad @ other.data.swapaxes(-1, -2), self.shape
+                )
+                other.grad += micrograd.unbroadcast(
+                    self.data.swapaxes(-1, -2) @ out.grad, other.shape
+                )
 
         out._backward = _backward
 
@@ -152,12 +160,19 @@ class Tensor:
         out = Tensor(s, (self,), "softmax")
 
         def _backward():
-            a = np.swapaxes(s, dim, -1)
-            local_deriv = micrograd.diag_embed(a).data - (
-                np.expand_dims(a, axis=-2) * np.expand_dims(a, axis=-1)
+            # TODO: there must be a cleaner way?
+            swapped_s = np.swapaxes(s, dim, -1)
+            local_deriv = micrograd.diag_embed(swapped_s).data - (
+                np.expand_dims(swapped_s, axis=-2) * np.expand_dims(swapped_s, axis=-1)
             )
-            local_deriv = np.swapaxes(local_deriv, dim, -1)
-            self.grad = self.grad + out.grad.dot(local_deriv)
+            swapped_out_grad = np.swapaxes(out.grad, dim, -1)
+            reshaped_out_grad = swapped_out_grad.reshape(-1, 1, swapped_s.shape[-1])
+            reshaped_local_deriv = local_deriv.reshape(
+                -1, swapped_s.shape[-1], swapped_s.shape[-1]
+            )
+            res = reshaped_out_grad @ reshaped_local_deriv
+            res = res.reshape(swapped_out_grad.shape).swapaxes(dim, -1)
+            self.grad += res
 
         out._backward = _backward
 

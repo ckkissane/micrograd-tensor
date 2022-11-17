@@ -41,6 +41,23 @@ def test_batched_cross_entropy_forward():
     assert np.allclose(mout.data, tout.numpy())
 
 
+def test_batched_cross_entropy_ignore_idx_forward():
+    batch_size = 2
+    a = np.random.randn(batch_size, 5)
+    target = np.array([1, -1], dtype=int)
+
+    my_a = Tensor(a)
+    my_target = Tensor(target)
+    my_out = F.batched_cross_entropy(my_a, my_target, ignore_index=-1)
+
+    torch_a = torch.as_tensor(a)
+    torch_target = torch.as_tensor(target)
+    torch_out = torch.nn.functional.cross_entropy(
+        torch_a, torch_target, ignore_index=-1
+    )
+    assert np.allclose(my_out.data, torch_out.numpy())
+
+
 def test_batched_cross_entropy_backward():
     batch_size = 2
     ma = Tensor(np.random.randn(batch_size, 5))
@@ -54,6 +71,26 @@ def test_batched_cross_entropy_backward():
     tout = torch.nn.functional.cross_entropy(ta, ttarget)
     tout.backward(gradient=torch.ones_like(tout))
     assert np.allclose(ma.grad, ta.grad.numpy())
+
+
+def test_batched_cross_entropy_ignore_idx_backward():
+    batch_size = 2
+    a = np.random.randn(batch_size, 5)
+    target = np.array([1, -1], dtype=int)
+
+    my_a = Tensor(a)
+    my_target = Tensor(target)
+    my_out = F.batched_cross_entropy(my_a, my_target, ignore_index=-1)
+    my_out.backward()
+
+    torch_a = torch.as_tensor(a)
+    torch_a.requires_grad = True
+    torch_target = torch.as_tensor(target)
+    torch_out = torch.nn.functional.cross_entropy(
+        torch_a, torch_target, ignore_index=-1
+    )
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+    assert np.allclose(my_a.grad, torch_a.grad.numpy())
 
 
 # helper function to test conv
@@ -358,11 +395,13 @@ def test_embedding_backward():
     my_input = Tensor(input)
     my_weight = Tensor(weight)
     my_out = F.embedding(my_input, my_weight)
-    my_out.backward()
+    dout = np.random.randn(*my_out.shape)
+    my_out.backward(gradient=dout)
 
     torch_input = torch.as_tensor(input)
     torch_weight = torch.as_tensor(weight)
     torch_weight.requires_grad = True
     torch_out = torch.nn.functional.embedding(torch_input, torch_weight)
-    torch_out.backward(gradient=torch.ones_like(torch_out))
+    torch_out.backward(gradient=torch.as_tensor(dout))
+
     assert np.allclose(my_weight.grad, torch_weight.grad.numpy())

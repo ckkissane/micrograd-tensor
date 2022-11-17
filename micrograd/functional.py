@@ -27,26 +27,35 @@ def cross_entropy(input: Tensor, target: int):
     return out
 
 
-def batched_cross_entropy(input: Tensor, target: Tensor) -> Tensor:
+def batched_cross_entropy(input: Tensor, target: Tensor, ignore_index=-100) -> Tensor:
     """
     Computes the cross entropy loss between input logits and target
 
     Args:
-        input (micrograd.Tensor) raw logits of shape (N, C)
-        target (np.array) Ground truth class indices of shape (N)
+        input (Tensor) raw logits of shape (N, C)
+        target (Tensor) ground truth class indices of shape (N)
     """
     input_max = input.data.max(axis=-1, keepdims=True)
     softmax_num = np.exp(input.data - input_max)
     softmax_denom = np.sum(softmax_num, axis=-1, keepdims=True)
     probs = softmax_num / softmax_denom
     p = probs[np.arange(probs.shape[0]), target.data]
-    out = Tensor(-np.log(p).mean(keepdims=True), (input,), "cross_entropy")
+
+    dont_ignore_mask = target.data != ignore_index
+    neg_log_probs = -np.log(p)
+    out = Tensor(
+        neg_log_probs.mean(keepdims=True, where=dont_ignore_mask),
+        (input,),
+        "cross_entropy",
+    )
 
     def _backward():
         batch_size = probs.shape[0]
+        num_ignored = batch_size - dont_ignore_mask.sum()
         input.grad = np.copy(probs)
         input.grad[np.arange(batch_size), target.data] -= 1.0
-        input.grad /= batch_size
+        input.grad *= np.expand_dims(dont_ignore_mask, -1)
+        input.grad /= batch_size - num_ignored
 
     out._backward = _backward
 
@@ -143,7 +152,7 @@ def embedding(input: Tensor, weight: Tensor) -> Tensor:
 
     def _backward():
         reshaped_input = input.data.reshape(-1)
-        reshaped_out_grad = out.grad.reshape(-1)
+        reshaped_out_grad = out.grad.reshape(-1, weight.shape[-1])
         # TODO: speed up
         for idx, g in zip(reshaped_input, reshaped_out_grad):
             weight.grad[idx] += g

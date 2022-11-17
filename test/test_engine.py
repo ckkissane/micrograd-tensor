@@ -274,8 +274,38 @@ def test_sigmoid_backward():
     assert np.allclose(ma.grad, ta.grad.numpy())
 
 
-def test_matmul_foward():
+def test_vector_matmul_forward():
     ma = Tensor(np.random.randn(2))
+    mb = Tensor(np.random.randn(2, 2))
+    mc = ma.matmul(mb)
+
+    ta = torch.from_numpy(ma.data)
+    tb = torch.from_numpy(mb.data)
+    tc = ta @ tb
+
+    assert np.allclose(mc.data, tc.numpy())
+
+
+def test_vector_matmul_backward():
+    ma = Tensor(np.random.randn(2))
+    mb = Tensor(np.random.randn(2, 2))
+    mc = ma.matmul(mb)
+    mc.backward()
+
+    ta = torch.from_numpy(ma.data)
+    ta.requires_grad = True
+    tb = torch.from_numpy(mb.data)
+    tb.requires_grad = True
+    tc = ta @ tb
+    tc.backward(gradient=torch.ones_like(tc))
+
+    assert np.allclose(ma.grad, ta.grad.numpy())
+    assert np.allclose(mb.grad, tb.grad.numpy())
+
+
+def test_matmul_forward():
+    batch_size = 16
+    ma = Tensor(np.random.randn(batch_size, 2))
     mb = Tensor(np.random.randn(2, 2))
     mc = ma.matmul(mb)
 
@@ -287,7 +317,8 @@ def test_matmul_foward():
 
 
 def test_matmul_backward():
-    ma = Tensor(np.random.randn(2))
+    batch_size = 16
+    ma = Tensor(np.random.randn(batch_size, 2))
     mb = Tensor(np.random.randn(2, 2))
     mc = ma.matmul(mb)
     mc.backward()
@@ -303,35 +334,39 @@ def test_matmul_backward():
     assert np.allclose(mb.grad, tb.grad.numpy())
 
 
-def test_batched_matmul_foward():
-    batch_size = 16
-    ma = Tensor(np.random.randn(batch_size, 2))
-    mb = Tensor(np.random.randn(2, 2))
-    mc = ma.matmul(mb)
+def test_batched_matmul_forward():
+    q = np.random.randn(1, 2, 3, 4)
+    k = q.swapaxes(-1, -2)
 
-    ta = torch.from_numpy(ma.data)
-    tb = torch.from_numpy(mb.data)
-    tc = ta @ tb
+    my_q = Tensor(q)
+    my_k = Tensor(k)
+    my_out = my_q.matmul(my_k)
 
-    assert np.allclose(mc.data, tc.numpy())
+    torch_q = torch.from_numpy(q)
+    torch_k = torch.from_numpy(k)
+    torch_out = torch_q @ torch_k
+
+    assert np.allclose(my_out.data, torch_out.detach().numpy())
 
 
 def test_batched_matmul_backward():
-    batch_size = 16
-    ma = Tensor(np.random.randn(batch_size, 2))
-    mb = Tensor(np.random.randn(2, 2))
-    mc = ma.matmul(mb)
-    mc.backward()
+    q = np.random.randn(1, 2, 3, 4)
+    k = q.swapaxes(-1, -2)
 
-    ta = torch.from_numpy(ma.data)
-    ta.requires_grad = True
-    tb = torch.from_numpy(mb.data)
-    tb.requires_grad = True
-    tc = ta @ tb
-    tc.backward(gradient=torch.ones_like(tc))
+    my_q = Tensor(q)
+    my_k = Tensor(k)
+    my_out = my_q.matmul(my_k)
+    my_out.backward()
 
-    assert np.allclose(ma.grad, ta.grad.numpy())
-    assert np.allclose(mb.grad, tb.grad.numpy())
+    torch_q = torch.from_numpy(q)
+    torch_q.requires_grad = True
+    torch_k = torch.from_numpy(k)
+    torch_k.requires_grad = True
+    torch_out = torch_q @ torch_k
+    torch_out.backward(gradient=torch.ones_like(torch_out))
+
+    assert np.allclose(my_q.grad, torch_q.grad.numpy())
+    assert np.allclose(my_k.grad, torch_k.grad.numpy())
 
 
 def test_relu_forward():
@@ -449,42 +484,79 @@ def test_softmax_backward_vector():
 
     my_x = Tensor(x)
     my_out = my_x.softmax(dim=dim)
-    my_out.backward()
+    dout = np.random.randn(*my_out.shape)
+    my_out.backward(gradient=dout)
 
     torch_x = torch.as_tensor(x)
     torch_x.requires_grad = True
     torch_out = torch_x.softmax(dim=dim)
-    torch_out.backward(gradient=torch.ones_like(torch_out))
+    torch_out.backward(gradient=torch.as_tensor(dout))
     assert np.allclose(my_x.grad, torch_x.grad.numpy())
 
 
 def test_softmax_backward_matrix():
-    x = np.random.randn(5, 5)
-    dim = 0
-
-    my_x = Tensor(x)
-    my_out = my_x.softmax(dim=dim)
-    my_out.backward()
-
-    torch_x = torch.as_tensor(x)
-    torch_x.requires_grad = True
-    torch_out = torch_x.softmax(dim=dim)
-    torch_out.backward(gradient=torch.ones_like(torch_out))
-    assert np.allclose(my_x.grad, torch_x.grad.numpy())
-
-
-def test_softmax_backward_tensor():
-    x = np.random.randn(1, 2, 5, 5)
+    x = np.random.randn(3, 5)
     dim = -1
 
     my_x = Tensor(x)
     my_out = my_x.softmax(dim=dim)
-    my_out.backward()
+    dout = np.random.randn(*my_out.shape)
+    my_out.backward(gradient=dout)
 
     torch_x = torch.as_tensor(x)
     torch_x.requires_grad = True
     torch_out = torch_x.softmax(dim=dim)
-    torch_out.backward(gradient=torch.ones_like(torch_out))
+    torch_out.backward(gradient=torch.as_tensor(dout))
+    assert np.allclose(my_x.grad, torch_x.grad.numpy())
+
+
+def test_softmax_backward_matrix_dim_0():
+    x = np.random.randn(3, 5)
+    dim = 0
+
+    my_x = Tensor(x)
+    my_out = my_x.softmax(dim=dim)
+    dout = np.random.randn(*my_out.shape)
+    my_out.backward(gradient=dout)
+
+    torch_x = torch.as_tensor(x)
+    torch_x.requires_grad = True
+    torch_out = torch_x.softmax(dim=dim)
+    torch_out.backward(gradient=torch.as_tensor(dout))
+    assert np.allclose(my_x.grad, torch_x.grad.numpy())
+
+
+def test_softmax_backward_tensor():
+    x = np.random.randn(8, 2, 5, 5)
+    dim = -1
+
+    my_x = Tensor(x)
+    my_out = my_x.softmax(dim=dim)
+
+    dout = np.random.randn(*my_out.shape)
+    my_out.backward(gradient=dout)
+
+    torch_x = torch.as_tensor(x)
+    torch_x.requires_grad = True
+    torch_out = torch_x.softmax(dim=dim)
+    torch_out.backward(gradient=torch.as_tensor(dout))
+    assert np.allclose(my_x.grad, torch_x.grad.numpy())
+
+
+def test_softmax_backward_tensor_dim_2():
+    x = np.random.randn(8, 2, 5, 5)
+    dim = 2
+
+    my_x = Tensor(x)
+    my_out = my_x.softmax(dim=dim)
+
+    dout = np.random.randn(*my_out.shape)
+    my_out.backward(gradient=dout)
+
+    torch_x = torch.as_tensor(x)
+    torch_x.requires_grad = True
+    torch_out = torch_x.softmax(dim=dim)
+    torch_out.backward(gradient=torch.as_tensor(dout))
     assert np.allclose(my_x.grad, torch_x.grad.numpy())
 
 
