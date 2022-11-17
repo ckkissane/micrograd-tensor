@@ -1,3 +1,3 @@
 Extension of Karpathy's [micrograd](https://github.com/karpathy/micrograd). 
 
-Check out the mnist example notebooks to see it in action.
+Check out the example notebooks to see it in action.
