@@ -23,7 +23,7 @@ class MnistDataset(Dataset):
             self._parse(
                 os.path.dirname(__file__) + "/mnist/train-images-idx3-ubyte.gz"
             )[0x10:]
-            .reshape((-1, 1, 28, 28))
+            .reshape((-1, 28, 28, 1))
             .astype(np.float32)
             / 256
         )
@@ -35,7 +35,7 @@ class MnistDataset(Dataset):
             self._parse(os.path.dirname(__file__) + "/mnist/t10k-images-idx3-ubyte.gz")[
                 0x10:
             ]
-            .reshape((-1, 1, 28, 28))
+            .reshape((-1, 28, 28, 1))
             .astype(np.float32)
             / 256
         )

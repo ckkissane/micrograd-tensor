@@ -148,9 +148,9 @@ def test_mnist_train_shape():
     train_dataset = MnistDataset(train=True)
     for x, y in train_dataset:
         assert x.shape == (
+            28,
+            28,
             1,
-            28,
-            28,
         )
         assert y.shape == ()
 
@@ -159,9 +159,9 @@ def test_mnist_test_shape():
     test_dataset = MnistDataset(train=False)
     for x, y in test_dataset:
         assert x.shape == (
+            28,
+            28,
             1,
-            28,
-            28,
         )
         assert y.shape == ()
 
@@ -189,8 +189,8 @@ def test_mnist_dataloader():
         assert isinstance(y, Tensor)
         assert x.shape == (
             batch_size,
+            28,
+            28,
             1,
-            28,
-            28,
         )
         assert y.shape == (batch_size,)
