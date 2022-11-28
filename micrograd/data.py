@@ -3,6 +3,8 @@ from .engine import Tensor
 import numpy as np
 import random
 import math
+import gzip
+import os
 
 
 class Dataset:
@@ -11,6 +13,48 @@ class Dataset:
 
     def __getitem__(self):
         raise NotImplementedError
+
+
+class MnistDataset(Dataset):
+    def __init__(self, train: bool = True):
+        self.train = train
+
+        self.x_train = (
+            self._parse(
+                os.path.dirname(__file__) + "/mnist/train-images-idx3-ubyte.gz"
+            )[0x10:]
+            .reshape((-1, 1, 28, 28))
+            .astype(np.float32)
+            / 256
+        )
+        self.y_train = self._parse(
+            os.path.dirname(__file__) + "/mnist/train-labels-idx1-ubyte.gz"
+        )[8:]
+
+        self.x_test = (
+            self._parse(os.path.dirname(__file__) + "/mnist/t10k-images-idx3-ubyte.gz")[
+                0x10:
+            ]
+            .reshape((-1, 1, 28, 28))
+            .astype(np.float32)
+            / 256
+        )
+        self.y_test = self._parse(
+            os.path.dirname(__file__) + "/mnist/t10k-labels-idx1-ubyte.gz"
+        )[8:]
+
+    def _parse(self, file):
+        return np.frombuffer(gzip.open(file).read(), dtype=np.uint8).copy()
+
+    def __len__(self):
+        return self.x_train.shape[0] if self.train else self.x_test.shape[0]
+
+    def __getitem__(self, item):
+        return (
+            (Tensor(self.x_train[item]), Tensor(self.y_train[item]))
+            if self.train
+            else (Tensor(self.x_test[item]), Tensor(self.y_test[item]))
+        )
 
 
 class DataLoader:

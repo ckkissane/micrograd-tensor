@@ -1,5 +1,5 @@
 from micrograd.engine import Tensor
-from micrograd.data import Dataset, DataLoader
+from micrograd.data import Dataset, DataLoader, MnistDataset
 import numpy as np
 import torch
 
@@ -132,3 +132,65 @@ def test_data_loader_shuffle():
 
     assert unshuffled_list != shuffled_list
     assert shuffled_set == unshuffled_set
+
+
+def test_mnist_train_len():
+    train_dataset = MnistDataset(train=True)
+    assert len(train_dataset) == 60000
+
+
+def test_mnist_test_len():
+    test_dataset = MnistDataset(train=False)
+    assert len(test_dataset) == 10000
+
+
+def test_mnist_train_shape():
+    train_dataset = MnistDataset(train=True)
+    for x, y in train_dataset:
+        assert x.shape == (
+            1,
+            28,
+            28,
+        )
+        assert y.shape == ()
+
+
+def test_mnist_test_shape():
+    test_dataset = MnistDataset(train=False)
+    for x, y in test_dataset:
+        assert x.shape == (
+            1,
+            28,
+            28,
+        )
+        assert y.shape == ()
+
+
+def test_mnist_train_type():
+    train_dataset = MnistDataset(train=True)
+    for x, y in train_dataset:
+        assert isinstance(x, Tensor)
+        assert isinstance(y, Tensor)
+
+
+def test_mnist_test_type():
+    test_dataset = MnistDataset(train=False)
+    for x, y in test_dataset:
+        assert isinstance(x, Tensor)
+        assert isinstance(y, Tensor)
+
+
+def test_mnist_dataloader():
+    train_dataset = MnistDataset(train=True)
+    batch_size = 2
+    train_loader = DataLoader(train_dataset, batch_size=2)
+    for x, y in train_loader:
+        assert isinstance(x, Tensor)
+        assert isinstance(y, Tensor)
+        assert x.shape == (
+            batch_size,
+            1,
+            28,
+            28,
+        )
+        assert y.shape == (batch_size,)
